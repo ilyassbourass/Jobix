@@ -14,13 +14,13 @@ class ApplicationFactory extends Factory
 
     public function definition(): array
     {
-        $status = fake()->randomElement(['pending', 'pending', 'reviewing', 'interview', 'accepted', 'rejected']);
+        $status = $this->faker->randomElement(['pending', 'pending', 'reviewing', 'interview', 'accepted', 'rejected']);
 
         return [
             // job_id and user_id are usually set by the seeder (unique constraint)
             'job_id' => 1,
             'user_id' => 1,
-            'cover_letter' => fake()->boolean(70)
+            'cover_letter' => $this->faker->boolean(70)
                 ? implode("\n\n", [
                     'Bonjour,',
                     "Je suis tres interesse(e) par ce poste. J'ai une experience solide et je suis motive(e) pour contribuer a vos projets au Maroc.",
@@ -30,14 +30,14 @@ class ApplicationFactory extends Factory
             'resume_path' => null,
             'status' => $status,
             'rejection_reason' => $status === 'rejected'
-                ? fake()->randomElement([
+                ? $this->faker->randomElement([
                     'Profile not aligned with the role requirements.',
                     'Experience level is not strong enough for this opening.',
                     'The role has already been filled.',
                 ])
                 : null,
             'company_notes' => in_array($status, ['reviewing', 'interview'], true)
-                ? fake()->sentence()
+                ? $this->faker->sentence()
                 : null,
         ];
     }

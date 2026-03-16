@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -148,7 +149,7 @@ class MoroccoDemoSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'company',
                 'company_id' => $company->id,
-                'phone' => fake()->randomElement([
+                'phone' => Arr::random([
                     '+212 6 12 34 56 78',
                     '+212 6 98 76 54 32',
                     '+212 5 22 33 44 55',
@@ -190,7 +191,7 @@ class MoroccoDemoSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'job_seeker',
                 'company_id' => null,
-                'phone' => fake()->randomElement([
+                'phone' => Arr::random([
                     '+212 6 11 22 33 44',
                     '+212 6 55 66 77 88',
                     '+212 6 99 88 77 66',

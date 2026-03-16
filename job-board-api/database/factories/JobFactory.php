@@ -15,7 +15,7 @@ class JobFactory extends Factory
 
     public function definition(): array
     {
-        $title = fake()->randomElement([
+        $title = $this->faker->randomElement([
             'Full Stack Developer',
             'Laravel Developer',
             'React Developer',
@@ -32,11 +32,11 @@ class JobFactory extends Factory
             'Product Owner',
         ]);
 
-        $jobType = fake()->randomElement(['full_time', 'part_time', 'remote']);
-        $experience = fake()->randomElement(['entry', 'mid', 'senior']);
+        $jobType = $this->faker->randomElement(['full_time', 'part_time', 'remote']);
+        $experience = $this->faker->randomElement(['entry', 'mid', 'senior']);
         [$salaryMin, $salaryMax] = $this->moroccoSalaryRange($experience);
 
-        $location = fake()->randomElement([
+        $location = $this->faker->randomElement([
             'Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Meknes', 'Fes', 'Agadir', 'Oujda', 'Kenitra', 'Tetouan',
         ]);
 
@@ -53,8 +53,8 @@ class JobFactory extends Factory
             'salary_min' => $salaryMin,
             'salary_max' => $salaryMax,
             'is_active' => true,
-            'published_at' => now()->subDays(fake()->numberBetween(0, 14)),
-            'expires_at' => now()->addDays(fake()->numberBetween(15, 60)),
+            'published_at' => now()->subDays($this->faker->numberBetween(0, 14)),
+            'expires_at' => now()->addDays($this->faker->numberBetween(15, 60)),
         ];
     }
 
@@ -63,9 +63,9 @@ class JobFactory extends Factory
         // MAD monthly salary ranges
         // Junior: 4k-7k, Mid: 7k-12k, Senior: 12k-20k
         return match ($experience) {
-            'entry' => [fake()->numberBetween(4000, 6000), fake()->numberBetween(6500, 7000)],
-            'mid' => [fake()->numberBetween(7000, 9500), fake()->numberBetween(10000, 12000)],
-            default => [fake()->numberBetween(12000, 16000), fake()->numberBetween(17000, 20000)],
+            'entry' => [$this->faker->numberBetween(4000, 6000), $this->faker->numberBetween(6500, 7000)],
+            'mid' => [$this->faker->numberBetween(7000, 9500), $this->faker->numberBetween(10000, 12000)],
+            default => [$this->faker->numberBetween(12000, 16000), $this->faker->numberBetween(17000, 20000)],
         };
     }
 
@@ -145,17 +145,17 @@ class JobFactory extends Factory
             "We're hiring a {$expLabel} {$title} to join a fast-paced team serving customers across Morocco. You will work closely with cross-functional stakeholders to deliver reliable, secure, and scalable solutions.",
             '',
             '## Responsibilities',
-            '- ' . implode("\n- ", fake()->randomElements($responsibilities, 3)),
+            '- ' . implode("\n- ", $this->faker->randomElements($responsibilities, 3)),
             '',
             '## Requirements',
-            '- ' . implode("\n- ", array_merge($roleSpecific, fake()->randomElements($requirements, 2))),
+            '- ' . implode("\n- ", array_merge($roleSpecific, $this->faker->randomElements($requirements, 2))),
             '',
             '## Nice to have',
             '- Experience in regulated sectors (banking/telecom) or large-scale environments.',
             '- Familiarity with CI/CD and monitoring (GitHub Actions, GitLab CI, Prometheus).',
             '',
             '## Benefits',
-            '- ' . implode("\n- ", fake()->randomElements($benefits, 3)),
+            '- ' . implode("\n- ", $this->faker->randomElements($benefits, 3)),
         ]);
     }
 }

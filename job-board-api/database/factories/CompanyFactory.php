@@ -15,22 +15,21 @@ class CompanyFactory extends Factory
 
     public function definition(): array
     {
-        $name = fake()->company();
+        $name = $this->faker->company();
 
         return [
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(4)),
             'logo' => null,
-            'description' => fake()->paragraphs(asText: true),
-            'website' => fake()->optional()->url(),
-            'location' => fake()->randomElement([
+            'description' => $this->faker->paragraphs(asText: true),
+            'website' => $this->faker->optional()->url(),
+            'location' => $this->faker->randomElement([
                 'Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Meknes', 'Fes', 'Agadir', 'Oujda', 'Kenitra', 'Tetouan',
             ]),
-            'industry' => fake()->randomElement([
+            'industry' => $this->faker->randomElement([
                 'Telecom', 'Banking', 'Consulting', 'IT Services', 'Industrial', 'Pharmaceutical', 'Distribution',
             ]),
-            'company_size' => fake()->randomElement([50, 100, 200, 500, 1000, 3000]),
+            'company_size' => $this->faker->randomElement([50, 100, 200, 500, 1000, 3000]),
         ];
     }
 }
-
