@@ -33,7 +33,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+
+      const requestUrl = error.config?.url || ''
+      const isLoginRequest = requestUrl.includes('/auth/login')
+      const onLoginPage = window.location.pathname === '/login'
+
+      if (!isLoginRequest && !onLoginPage) {
+        window.location.replace('/login?session=expired')
+      }
     }
 
     if (error.response?.status === 403 && error.response?.data?.verification_required) {

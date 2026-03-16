@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Briefcase } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -11,12 +11,23 @@ import { useI18n } from '../context/I18nContext'
 export default function Login() {
   const { user, login } = useAuth()
   const { t } = useI18n()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   if (user) return <Navigate to="/" replace />
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('session') === 'expired') {
+      setError('Your session is no longer valid. Please sign in again.')
+      return
+    }
+
+    setError('')
+  }, [location.search])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
