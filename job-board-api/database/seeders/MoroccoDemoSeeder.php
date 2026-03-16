@@ -105,7 +105,7 @@ class MoroccoDemoSeeder extends Seeder
 
         $companies = [];
         foreach ($data as $c) {
-            $companies[] = Company::firstOrCreate(
+            $companies[] = Company::updateOrCreate(
                 ['slug' => Str::slug($c['name'])],
                 [
                     'name' => $c['name'],
@@ -141,7 +141,10 @@ class MoroccoDemoSeeder extends Seeder
 
             $user->forceFill([
                 'name' => $account['name'],
-                'username' => Str::slug(Str::before($account['email'], '@'), ''),
+                'username' => $this->uniqueUsername(
+                    Str::before($account['email'], '@') . '-' . $company->slug,
+                    $user->exists ? $user->id : null
+                ),
                 'password' => Hash::make('password'),
                 'role' => 'company',
                 'company_id' => $company->id,
@@ -180,7 +183,10 @@ class MoroccoDemoSeeder extends Seeder
 
             $user->forceFill([
                 'name' => $name,
-                'username' => Str::slug(Str::before($email, '@'), ''),
+                'username' => $this->uniqueUsername(
+                    Str::before($email, '@'),
+                    $user->exists ? $user->id : null
+                ),
                 'password' => Hash::make('password'),
                 'role' => 'job_seeker',
                 'company_id' => null,
@@ -208,6 +214,30 @@ class MoroccoDemoSeeder extends Seeder
         shuffle($seekers);
 
         return $seekers;
+    }
+
+    private function uniqueUsername(string $value, ?int $ignoreUserId = null): string
+    {
+        $base = preg_replace('/[^a-z0-9]+/', '', Str::lower($value)) ?? '';
+        $base = substr($base, 0, 40);
+        $base = $base !== '' ? $base : 'user';
+
+        $username = $base;
+        $suffix = 2;
+
+        while (
+            User::query()
+                ->when($ignoreUserId, fn ($query) => $query->where('id', '!=', $ignoreUserId))
+                ->where('username', $username)
+                ->exists()
+        ) {
+            $suffixText = (string) $suffix;
+            $trimmedBase = substr($base, 0, max(1, 40 - strlen($suffixText)));
+            $username = $trimmedBase . $suffixText;
+            $suffix++;
+        }
+
+        return $username;
     }
 
     /**

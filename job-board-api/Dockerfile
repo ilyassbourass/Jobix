@@ -12,5 +12,6 @@ RUN docker-php-ext-install pdo pdo_pgsql
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 RUN composer install --no-dev --optimize-autoloader
+RUN chmod +x docker/entrypoint.sh
 
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=10000
+CMD ["./docker/entrypoint.sh"]
