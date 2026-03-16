@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -29,24 +30,11 @@ class AdminController extends Controller
             $keys = $months->map(fn ($d) => $d->format('Y-m'))->values();
             $labels = $months->map(fn ($d) => $d->format('M Y'))->values();
             $since = $months->first()->copy()->startOfMonth();
+            $bucketExpression = $this->dateBucketExpression('month');
 
-            $usersAgg = User::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
-
-            $jobsAgg = Job::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
-
-            $appsAgg = Application::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
+            $usersAgg = $this->aggregateCountsFor(User::class, $since, $bucketExpression);
+            $jobsAgg = $this->aggregateCountsFor(Job::class, $since, $bucketExpression);
+            $appsAgg = $this->aggregateCountsFor(Application::class, $since, $bucketExpression);
 
             $series = $keys->map(function ($k, $idx) use ($labels, $usersAgg, $jobsAgg, $appsAgg) {
                 return [
@@ -66,24 +54,11 @@ class AdminController extends Controller
             $keys = $days->map(fn ($d) => $d->format('Y-m-d'))->values();
             $labels = $days->map(fn ($d) => $d->format('M j'))->values();
             $since = $days->first()->copy()->startOfDay();
+            $bucketExpression = $this->dateBucketExpression('day');
 
-            $usersAgg = User::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
-
-            $jobsAgg = Job::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
-
-            $appsAgg = Application::query()
-                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m-%d') as k, COUNT(*) as c")
-                ->where('created_at', '>=', $since)
-                ->groupBy('k')
-                ->pluck('c', 'k');
+            $usersAgg = $this->aggregateCountsFor(User::class, $since, $bucketExpression);
+            $jobsAgg = $this->aggregateCountsFor(Job::class, $since, $bucketExpression);
+            $appsAgg = $this->aggregateCountsFor(Application::class, $since, $bucketExpression);
 
             $series = $keys->map(function ($k, $idx) use ($labels, $usersAgg, $jobsAgg, $appsAgg) {
                 return [
@@ -106,6 +81,32 @@ class AdminController extends Controller
             'range' => $range,
         ];
         return response()->json($stats);
+    }
+
+    private function aggregateCountsFor(string $modelClass, Carbon $since, string $bucketExpression)
+    {
+        return $modelClass::query()
+            ->selectRaw("{$bucketExpression} as k, COUNT(*) as c")
+            ->where('created_at', '>=', $since)
+            ->groupBy(DB::raw($bucketExpression))
+            ->pluck('c', 'k');
+    }
+
+    private function dateBucketExpression(string $granularity): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        return match ($driver) {
+            'pgsql' => $granularity === 'month'
+                ? "TO_CHAR(created_at, 'YYYY-MM')"
+                : "TO_CHAR(created_at, 'YYYY-MM-DD')",
+            'sqlite' => $granularity === 'month'
+                ? "strftime('%Y-%m', created_at)"
+                : "strftime('%Y-%m-%d', created_at)",
+            default => $granularity === 'month'
+                ? "DATE_FORMAT(created_at, '%Y-%m')"
+                : "DATE_FORMAT(created_at, '%Y-%m-%d')",
+        };
     }
 
     public function users(Request $request): JsonResponse
