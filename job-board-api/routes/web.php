@@ -4,25 +4,20 @@ use App\Mail\TestEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+/* |-------------------------------------------------------------------------- | Web Routes |-------------------------------------------------------------------------- | | Here is where you can register web routes for your application. These | routes are loaded by the RouteServiceProvider and all of them will | be assigned to the "web" middleware group. Make something great! | */
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+    'name' => 'Jobix API',
+    'status' => 'running',
+    'version' => '1.0'
+    ]);
 });
 
 Route::get('/reset-password/{token}', function (string $token) {
-    $frontendUrl = rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/');
+    $frontendUrl = rtrim((string)config('app.frontend_url', 'http://localhost:5173'), '/');
     $email = request('email');
-    $query = $email ? ('?email=' . urlencode((string) $email)) : '';
+    $query = $email ? ('?email=' . urlencode((string)$email)) : '';
 
     return redirect()->away("{$frontendUrl}/reset-password/{$token}{$query}");
 })->name('password.reset');
