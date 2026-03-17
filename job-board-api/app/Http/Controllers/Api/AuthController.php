@@ -20,6 +20,12 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        if ($request->filled('email')) {
+            $request->merge([
+                'email' => strtolower(trim((string) $request->input('email'))),
+            ]);
+        }
+
         if ($request->filled('username')) {
             $normalized = preg_replace('/[^a-zA-Z0-9]/', '', (string) $request->input('username'));
             $request->merge(['username' => strtolower((string) $normalized)]);
@@ -151,6 +157,12 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        if ($request->filled('email')) {
+            $request->merge([
+                'email' => strtolower(trim((string) $request->input('email'))),
+            ]);
+        }
+
         $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
@@ -169,6 +181,8 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Please verify your email address before signing in.',
                 'verification_required' => true,
+                'email' => $user->email,
+                'user_id' => $user->id,
             ], 403);
         }
 

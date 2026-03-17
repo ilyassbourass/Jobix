@@ -91,9 +91,23 @@ export const AuthProvider = ({ children }) => {
       return { success: true }
     } catch (error) {
       if (error.response?.status === 403 && error.response?.data?.verification_required) {
-        localStorage.setItem(pendingVerificationEmailKey, credentials.email)
-        localStorage.removeItem(pendingVerificationUserIdKey)
-        navigate('/verify-email', { replace: true, state: { email: credentials.email } })
+        const pendingEmail = error.response?.data?.email || credentials.email
+        const pendingUserId = error.response?.data?.user_id || null
+
+        localStorage.setItem(pendingVerificationEmailKey, pendingEmail)
+        if (pendingUserId) {
+          localStorage.setItem(pendingVerificationUserIdKey, String(pendingUserId))
+        } else {
+          localStorage.removeItem(pendingVerificationUserIdKey)
+        }
+
+        navigate('/verify-email', {
+          replace: true,
+          state: {
+            email: pendingEmail,
+            userId: pendingUserId,
+          },
+        })
         toast.error(error.response?.data?.message || t('auth.verifyRequired'))
         return { verificationRequired: true }
       }

@@ -60,6 +60,8 @@ api.interceptors.response.use(
       const storedUser = localStorage.getItem('user')
       let email = null
       let fallbackEmail = null
+      let userId = error.response?.data?.user_id || null
+      let fallbackUserId = null
 
       try {
         email = error.config?.data && typeof error.config.data === 'string'
@@ -70,15 +72,21 @@ api.interceptors.response.use(
       }
 
       try {
-        fallbackEmail = storedUser ? JSON.parse(storedUser)?.email : null
+        const parsedUser = storedUser ? JSON.parse(storedUser) : null
+        fallbackEmail = parsedUser?.email || null
+        fallbackUserId = parsedUser?.id || null
       } catch {
         fallbackEmail = null
+        fallbackUserId = null
       }
 
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      if (email || fallbackEmail) {
-        localStorage.setItem('pendingVerificationEmail', email || fallbackEmail)
+      if (email || fallbackEmail || error.response?.data?.email) {
+        localStorage.setItem('pendingVerificationEmail', error.response?.data?.email || email || fallbackEmail)
+      }
+      if (userId || fallbackUserId) {
+        localStorage.setItem('pendingVerificationUserId', String(userId || fallbackUserId))
       }
       window.location.href = '/verify-email'
     }

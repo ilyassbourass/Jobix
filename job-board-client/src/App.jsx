@@ -34,7 +34,7 @@ function ProtectedRoute({ children, roles }) {
   if (loading) return <PageSpinner />
   if (!user) return <Navigate to="/login" replace />
   if (!user.email_verified_at) {
-    return <Navigate to="/verify-email" replace state={{ email: user.email }} />
+    return <Navigate to="/verify-email" replace state={{ email: user.email, userId: user.id }} />
   }
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
 

@@ -152,8 +152,28 @@ class EmailVerificationFlowTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/auth/email/verification-notification', [
-            'email' => 'wrong@example.com',
+            'email' => $user->email,
             'user_id' => $user->id,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'A new verification code has been sent to your email.');
+
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_resend_finds_pending_user_case_insensitively_by_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create([
+            'email' => 'MixedCaseUser@example.com',
+            'email_verification_sent_at' => now()->subMinutes(2),
+        ]);
+
+        $response = $this->postJson('/api/auth/email/verification-notification', [
+            'email' => 'mixedcaseuser@example.com',
         ]);
 
         $response

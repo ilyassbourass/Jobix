@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
 class EmailVerificationController extends Controller
 {
     private const RESEND_COOLDOWN_SECONDS = 60;
@@ -18,24 +19,17 @@ class EmailVerificationController extends Controller
             'user_id' => ['nullable', 'integer'],
         ]);
 
-        $email = $request->user()?->email;
-        $userId = $validated['user_id'] ?? null;
-
-        if ($userId) {
-            $user = User::find($userId);
-
-            if ($user) {
-                $email = $user->email;
-            }
-        }
-
-        if (!$email) {
-            $email = $validated['email'] ?? null;
-        }
-
-        $user = ($user ?? null) ?: User::where('email', $email)->first();
+        $userId = isset($validated['user_id']) ? (int) $validated['user_id'] : null;
+        $email = $this->normalizeEmail($validated['email'] ?? $request->user()?->email);
+        $user = $this->findPendingUser($userId, $email);
 
         if (!$user) {
+            if ($email || $userId) {
+                return response()->json([
+                    'message' => 'We could not find a pending account for this email. Please sign up again.',
+                ], 404);
+            }
+
             return response()->json([
                 'message' => 'If an account exists for this email, a verification code has been sent.',
             ]);
@@ -72,19 +66,13 @@ class EmailVerificationController extends Controller
             'user_id' => ['nullable', 'integer'],
         ]);
 
-        $user = isset($validated['user_id'])
-            ? User::find($validated['user_id'])
-            : null;
-
-        if ($user && $user->email !== $validated['email']) {
-            $user = null;
-        }
-
-        $user = $user ?: User::where('email', $validated['email'])->first();
+        $userId = isset($validated['user_id']) ? (int) $validated['user_id'] : null;
+        $email = $this->normalizeEmail($validated['email']);
+        $user = $this->findPendingUser($userId, $email);
 
         if (!$user) {
             return response()->json([
-                'message' => 'Invalid verification code.',
+                'message' => 'We could not find a pending account for this email. Please sign up again.',
             ], 422);
         }
 
@@ -139,5 +127,33 @@ class EmailVerificationController extends Controller
         }
 
         return max(1, $availableAt->timestamp - now()->timestamp);
+    }
+
+    private function findPendingUser(?int $userId, ?string $email): ?User
+    {
+        if ($userId) {
+            $user = User::find($userId);
+
+            if ($user && (!$email || $this->normalizeEmail($user->email) === $email)) {
+                return $user;
+            }
+        }
+
+        if (!$email) {
+            return null;
+        }
+
+        return User::whereRaw('LOWER(email) = ?', [$email])->latest('id')->first();
+    }
+
+    private function normalizeEmail(?string $email): ?string
+    {
+        if ($email === null) {
+            return null;
+        }
+
+        $trimmed = trim($email);
+
+        return $trimmed === '' ? null : strtolower($trimmed);
     }
 }
