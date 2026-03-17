@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Job;
 use App\Models\User;
+use App\Support\Uploads;
 use App\Notifications\ApplicationStatusChangedNotification;
 use App\Notifications\CompanyApplicationReceivedNotification;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
@@ -39,12 +39,12 @@ class ApplicationController extends Controller
 
         $resumePath = null;
         if ($request->hasFile('resume')) {
-            $resumePath = Storage::disk('local')->putFile('resumes', $request->file('resume'));
-        } elseif (!empty($user->resume_path) && Storage::disk('local')->exists($user->resume_path)) {
+            $resumePath = Uploads::disk()->putFile('resumes', $request->file('resume'));
+        } elseif (!empty($user->resume_path) && Uploads::disk()->exists($user->resume_path)) {
             $extension = pathinfo((string) $user->resume_path, PATHINFO_EXTENSION);
             $filename = 'resume-' . $user->id . '-' . Str::random(12) . ($extension ? '.' . $extension : '');
             $resumePath = 'application-resumes/' . $user->id . '/' . $filename;
-            Storage::disk('local')->copy($user->resume_path, $resumePath);
+            Uploads::disk()->copy($user->resume_path, $resumePath);
         }
 
         $application = Application::create([
@@ -188,11 +188,11 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'You do not have permission to download this resume.'], 403);
         }
 
-        if (empty($application->resume_path) || !Storage::disk('local')->exists($application->resume_path)) {
+        if (empty($application->resume_path) || !Uploads::disk()->exists($application->resume_path)) {
             return response()->json(['message' => 'Resume not found.'], 404);
         }
 
-        return Storage::disk('local')->download($application->resume_path);
+        return Uploads::disk()->download($application->resume_path);
     }
 
     public function recentCompanyApplications(Request $request): JsonResponse

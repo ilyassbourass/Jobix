@@ -17,8 +17,8 @@ class PublicProfileTest extends TestCase
 
     public function test_public_profile_shows_resume_metadata_without_exposing_private_email(): void
     {
-        Storage::fake('local');
-        Storage::disk('local')->put('resumes/wxLQlHHJsntDJqe4CUDvZeBQnSGSVP2WNRYhJv68.pdf', 'resume contents');
+        Storage::fake('uploads');
+        Storage::disk('uploads')->put('resumes/wxLQlHHJsntDJqe4CUDvZeBQnSGSVP2WNRYhJv68.pdf', 'resume contents');
 
         $user = User::factory()->create([
             'role' => 'job_seeker',

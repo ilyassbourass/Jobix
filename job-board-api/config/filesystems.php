@@ -2,6 +2,8 @@
 
 return [
 
+    'uploads_disk' => env('UPLOADS_DISK', 'uploads'),
+
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -33,6 +35,12 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
+            'throw' => false,
+        ],
+
+        'uploads' => [
+            'driver' => 'local',
+            'root' => storage_path('app/uploads'),
             'throw' => false,
         ],
 

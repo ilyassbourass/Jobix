@@ -73,7 +73,7 @@ class ApplicationWorkflowTest extends TestCase
     public function test_job_application_uses_the_saved_profile_resume_when_no_new_file_is_uploaded(): void
     {
         Mail::fake();
-        Storage::fake('local');
+        Storage::fake('uploads');
 
         $company = Company::factory()->create();
         $category = Category::create([
@@ -94,7 +94,7 @@ class ApplicationWorkflowTest extends TestCase
             'resume_path' => 'resumes/profile-resume.pdf',
         ]);
 
-        Storage::disk('local')->put('resumes/profile-resume.pdf', 'profile resume');
+        Storage::disk('uploads')->put('resumes/profile-resume.pdf', 'profile resume');
 
         $response = $this
             ->withHeaders($this->authHeaders($jobSeeker))
@@ -110,8 +110,8 @@ class ApplicationWorkflowTest extends TestCase
         $this->assertNotNull($resumePath);
         $this->assertNotSame('resumes/profile-resume.pdf', $resumePath);
         $this->assertStringStartsWith('application-resumes/' . $jobSeeker->id . '/', $resumePath);
-        Storage::disk('local')->assertExists('resumes/profile-resume.pdf');
-        Storage::disk('local')->assertExists($resumePath);
+        Storage::disk('uploads')->assertExists('resumes/profile-resume.pdf');
+        Storage::disk('uploads')->assertExists($resumePath);
     }
 
     private function makeCompanyApplicationFixture(): array

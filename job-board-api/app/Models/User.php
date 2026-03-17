@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Uploads;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -72,7 +73,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             return false;
         }
 
-        return Storage::disk('local')->exists($this->resume_path);
+        return Uploads::disk()->exists($this->resume_path);
     }
 
     public function getResumeFilenameAttribute(): ?string

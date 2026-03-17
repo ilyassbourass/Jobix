@@ -6,10 +6,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
+use App\Support\Uploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
@@ -112,10 +112,10 @@ class UserController extends Controller
                 $user->avatar = $this->storeUserAvatar($request->file('avatar'));
             }
             if ($request->hasFile('resume')) {
-                if ($user->resume_path && Storage::disk('local')->exists($user->resume_path)) {
-                    Storage::disk('local')->delete($user->resume_path);
+                if ($user->resume_path && Uploads::disk()->exists($user->resume_path)) {
+                    Uploads::disk()->delete($user->resume_path);
                 }
-                $user->resume_path = $request->file('resume')->store('resumes', 'local');
+                $user->resume_path = $request->file('resume')->store('resumes', Uploads::diskName());
             }
         }
         $user->save();
@@ -139,7 +139,7 @@ class UserController extends Controller
                 }
                 if ($request->hasFile('company_logo')) {
                     $this->deleteCompanyLogoFile($company);
-                    $company->logo = $request->file('company_logo')->store('company-logos', 'public');
+                    $company->logo = $request->file('company_logo')->store('company-logos', Uploads::diskName());
                 }
                 $company->save();
             }
@@ -243,12 +243,12 @@ class UserController extends Controller
             ? ltrim($user->avatar, '/')
             : 'avatars/' . ltrim($user->avatar, '/');
 
-        if (!Storage::disk('public')->exists($path)) {
+        if (!Uploads::disk()->exists($path)) {
             return response()->json(['message' => 'Avatar not found.'], 404);
         }
 
-        $mime = Storage::disk('public')->mimeType($path) ?? 'application/octet-stream';
-        $contents = Storage::disk('public')->get($path);
+        $mime = Uploads::disk()->mimeType($path) ?? 'application/octet-stream';
+        $contents = Uploads::disk()->get($path);
 
         return response($contents, 200)
             ->header('Content-Type', $mime)
@@ -262,8 +262,8 @@ class UserController extends Controller
             return response()->json(['message' => 'Only job seekers can remove saved resumes.'], 403);
         }
 
-        if (!empty($user->resume_path) && Storage::disk('local')->exists($user->resume_path)) {
-            Storage::disk('local')->delete($user->resume_path);
+        if (!empty($user->resume_path) && Uploads::disk()->exists($user->resume_path)) {
+            Uploads::disk()->delete($user->resume_path);
         }
 
         $user->resume_path = null;
@@ -278,7 +278,7 @@ class UserController extends Controller
     public function downloadResume(Request $request, string $username)
     {
         $userModel = User::where('username', $username)->orWhere('id', (int) $username)->firstOrFail();
-        if (empty($userModel->resume_path) || !Storage::disk('local')->exists($userModel->resume_path)) {
+        if (empty($userModel->resume_path) || !Uploads::disk()->exists($userModel->resume_path)) {
             abort(404, 'Resume not found.');
         }
 
@@ -306,13 +306,13 @@ class UserController extends Controller
         $name = $userModel->resume_filename
             ?: (($userModel->name ?? 'resume') . '-resume.' . pathinfo($userModel->resume_path, PATHINFO_EXTENSION));
 
-        return Storage::disk('local')->download($userModel->resume_path, $name);
+        return Uploads::disk()->download($userModel->resume_path, $name);
     }
 
     private function storeUserAvatar($file): string
     {
         $filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-        $file->storeAs('avatars', $filename, 'public');
+        $file->storeAs('avatars', $filename, Uploads::diskName());
 
         return $filename;
     }
@@ -321,7 +321,7 @@ class UserController extends Controller
     {
         $filename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
 
-        return $file->storeAs('company-logos', $filename, 'public');
+        return $file->storeAs('company-logos', $filename, Uploads::diskName());
     }
 
     private function deleteUserAvatarFile(User $user): void
@@ -334,8 +334,8 @@ class UserController extends Controller
             ? ltrim($user->avatar, '/')
             : 'avatars/' . ltrim($user->avatar, '/');
 
-        if (Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->delete($path);
+        if (Uploads::disk()->exists($path)) {
+            Uploads::disk()->delete($path);
         }
     }
 
@@ -345,8 +345,8 @@ class UserController extends Controller
             return;
         }
 
-        if (Storage::disk('public')->exists($company->logo)) {
-            Storage::disk('public')->delete($company->logo);
+        if (Uploads::disk()->exists($company->logo)) {
+            Uploads::disk()->delete($company->logo);
         }
     }
 }
