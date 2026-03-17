@@ -2,6 +2,18 @@
 
 use Illuminate\Support\Str;
 
+$databaseUrl = env('DATABASE_URL');
+$parsedDatabaseUrl = $databaseUrl ? parse_url($databaseUrl) : null;
+$parsedDatabaseQuery = [];
+
+if (is_array($parsedDatabaseUrl) && isset($parsedDatabaseUrl['query'])) {
+    parse_str($parsedDatabaseUrl['query'], $parsedDatabaseQuery);
+}
+
+$pgsqlDatabasePath = is_array($parsedDatabaseUrl)
+    ? ltrim((string) ($parsedDatabaseUrl['path'] ?? ''), '/')
+    : null;
+
 return [
 
     /*
@@ -65,17 +77,19 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
+            // Prefer the parsed DATABASE_URL in production so Postgres cannot drift
+            // between stale DB_* env vars and the active Neon URL.
+            'url' => null,
+            'host' => $parsedDatabaseUrl['host'] ?? env('DB_HOST', '127.0.0.1'),
+            'port' => isset($parsedDatabaseUrl['port']) ? (string) $parsedDatabaseUrl['port'] : env('DB_PORT', '5432'),
+            'database' => $pgsqlDatabasePath ?: env('DB_DATABASE', 'forge'),
+            'username' => isset($parsedDatabaseUrl['user']) ? urldecode((string) $parsedDatabaseUrl['user']) : env('DB_USERNAME', 'forge'),
+            'password' => isset($parsedDatabaseUrl['pass']) ? urldecode((string) $parsedDatabaseUrl['pass']) : env('DB_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => $parsedDatabaseQuery['sslmode'] ?? env('DB_SSLMODE', 'prefer'),
         ],
 
         'sqlsrv' => [
