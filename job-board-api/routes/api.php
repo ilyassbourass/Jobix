@@ -53,6 +53,7 @@ Route::middleware(['auth:api', 'verified'])->group(function () {
     Route::post('/profile/upload-avatar', [UserController::class, 'uploadAvatar']);
     Route::delete('/profile/avatar', [UserController::class, 'deleteAvatar']);
     Route::delete('/user/resume', [UserController::class, 'deleteResume'])->middleware('role:job_seeker');
+    Route::get('/users/{username}/resume-access', [UserController::class, 'resumeAccess']);
     Route::get('/users/{username}/resume', [UserController::class, 'downloadResume']);
 
     // Job seeker / company jobs

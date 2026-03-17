@@ -199,10 +199,7 @@ class UserController extends Controller
 
     public function showPublic(string $username): JsonResponse
     {
-        $user = User::where('username', $username)
-            ->orWhere('id', (int) $username)
-            ->with('company')
-            ->firstOrFail();
+        $user = $this->resolvePublicUser($username)->load('company');
 
         $data = [
             'id' => $user->id,
@@ -230,6 +227,15 @@ class UserController extends Controller
         ];
 
         return response()->json($data);
+    }
+
+    public function resumeAccess(Request $request, string $username): JsonResponse
+    {
+        $userModel = $this->resolvePublicUser($username);
+
+        return response()->json([
+            'can_download' => $this->canDownloadResumeForViewer($request->user(), $userModel),
+        ]);
     }
 
     public function avatar(int $id)
@@ -277,7 +283,7 @@ class UserController extends Controller
 
     public function downloadResume(Request $request, string $username)
     {
-        $userModel = User::where('username', $username)->orWhere('id', (int) $username)->firstOrFail();
+        $userModel = $this->resolvePublicUser($username);
         if (empty($userModel->resume_path) || !Uploads::disk()->exists($userModel->resume_path)) {
             abort(404, 'Resume not found.');
         }
@@ -286,20 +292,8 @@ class UserController extends Controller
         if (!$authUser) {
             abort(401, 'Unauthorized.');
         }
-        $isOwner = $authUser->id === $userModel->id;
-        $isAdmin = $authUser->role === 'admin';
-        
-        $isCompanyOwner = false;
-        if ($authUser->role === 'company') {
-            // Check if this job seeker applied to any job owned by the authenticated company
-            $hasApplied = \App\Models\Application::where('user_id', $userModel->id)
-                ->whereHas('job', function ($query) use ($authUser) {
-                    $query->where('company_id', $authUser->company_id);
-                })->exists();
-            $isCompanyOwner = $hasApplied;
-        }
 
-        if (!$isOwner && !$isAdmin && !$isCompanyOwner) {
+        if (!$this->canDownloadResumeForViewer($authUser, $userModel)) {
             abort(403, 'Unauthorized.');
         }
 
@@ -307,6 +301,30 @@ class UserController extends Controller
             ?: (($userModel->name ?? 'resume') . '-resume.' . pathinfo($userModel->resume_path, PATHINFO_EXTENSION));
 
         return Uploads::disk()->download($userModel->resume_path, $name);
+    }
+
+    private function resolvePublicUser(string $username): User
+    {
+        return User::where('username', $username)
+            ->orWhere('id', (int) $username)
+            ->firstOrFail();
+    }
+
+    private function canDownloadResumeForViewer(User $authUser, User $userModel): bool
+    {
+        if ($authUser->id === $userModel->id || $authUser->role === 'admin') {
+            return true;
+        }
+
+        if ($authUser->role !== 'company') {
+            return false;
+        }
+
+        return \App\Models\Application::where('user_id', $userModel->id)
+            ->whereHas('job', function ($query) use ($authUser) {
+                $query->where('company_id', $authUser->company_id);
+            })
+            ->exists();
     }
 
     private function storeUserAvatar($file): string

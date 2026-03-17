@@ -32,6 +32,8 @@ export default function PublicUserProfile() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [downloadingResume, setDownloadingResume] = useState(false)
+  const [checkingResumeAccess, setCheckingResumeAccess] = useState(false)
+  const [canDownloadResume, setCanDownloadResume] = useState(false)
   const [requestVersion, setRequestVersion] = useState(0)
 
   useEffect(() => {
@@ -48,9 +50,50 @@ export default function PublicUserProfile() {
       .finally(() => setLoading(false))
   }, [username, requestVersion])
 
+  useEffect(() => {
+    let cancelled = false
+
+    if (!authUser || !user?.has_resume) {
+      setCheckingResumeAccess(false)
+      setCanDownloadResume(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    setCheckingResumeAccess(true)
+
+    api
+      .get(`/users/${username}/resume-access`)
+      .then(({ data }) => {
+        if (!cancelled) {
+          setCanDownloadResume(Boolean(data?.can_download))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCanDownloadResume(false)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCheckingResumeAccess(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authUser, user?.has_resume, username])
+
   const downloadResume = async () => {
     if (!authUser) {
       toast.error(t('publicProfile.signInResume'))
+      return
+    }
+
+    if (!canDownloadResume) {
+      toast.error(t('publicProfile.resumeAccessLimited'))
       return
     }
 
@@ -214,7 +257,15 @@ export default function PublicUserProfile() {
 
               <div className="mt-5">
                 {user.has_resume ? (
-                  authUser ? (
+                  !authUser ? (
+                    <p className="text-sm text-slate-500 dark:text-gray-400">
+                      {t('publicProfile.signInResume')}
+                    </p>
+                  ) : checkingResumeAccess ? (
+                    <p className="text-sm text-slate-500 dark:text-gray-400">
+                      {t('common.loading')}
+                    </p>
+                  ) : canDownloadResume ? (
                     <Button
                       variant="default"
                       size="lg"
@@ -227,7 +278,7 @@ export default function PublicUserProfile() {
                     </Button>
                   ) : (
                     <p className="text-sm text-slate-500 dark:text-gray-400">
-                      {t('publicProfile.signInResume')}
+                      {t('publicProfile.resumeAccessLimited')}
                     </p>
                   )
                 ) : (
