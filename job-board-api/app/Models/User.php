@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Support\Uploads;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -113,16 +115,56 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function generateEmailVerificationCode(): string
     {
+        $existingCode = $this->currentEmailVerificationCode();
+
+        if ($existingCode !== null) {
+            $this->forceFill([
+                'email_verification_sent_at' => now(),
+            ])->save();
+
+            return $existingCode;
+        }
+
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiresAt = now()->addMinutes((int) config('auth.verification.expire', 10));
 
         $this->forceFill([
-            'email_verification_code' => Hash::make($code),
+            'email_verification_code' => Crypt::encryptString($code),
             'email_verification_expires_at' => $expiresAt,
             'email_verification_sent_at' => now(),
         ])->save();
 
         return $code;
+    }
+
+    public function currentEmailVerificationCode(): ?string
+    {
+        if (
+            empty($this->email_verification_code)
+            || !$this->email_verification_expires_at
+            || now()->greaterThan($this->email_verification_expires_at)
+        ) {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($this->email_verification_code);
+        } catch (DecryptException) {
+            return null;
+        }
+    }
+
+    public function hasMatchingEmailVerificationCode(string $code): bool
+    {
+        if (empty($this->email_verification_code)) {
+            return false;
+        }
+
+        try {
+            return hash_equals($code, Crypt::decryptString($this->email_verification_code));
+        } catch (DecryptException) {
+            return Hash::check($code, $this->email_verification_code);
+        }
     }
 
     public function clearEmailVerificationCode(): void

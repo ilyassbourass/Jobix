@@ -123,7 +123,14 @@ class AuthController extends Controller
             ]);
         });
 
-        event(new Registered($user));
+        $verificationEmailQueued = true;
+
+        try {
+            event(new Registered($user));
+        } catch (\Throwable $e) {
+            report($e);
+            $verificationEmailQueued = false;
+        }
 
         if ($isNewUser) {
             try {
@@ -134,7 +141,9 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'Your account has been created. Enter the verification code sent to your email to continue.',
+            'message' => $verificationEmailQueued
+                ? 'Your account has been created. Enter the verification code sent to your email to continue.'
+                : 'Your account has been created. We could not send the verification code right away. Use resend code on the verification page to continue.',
             'user' => $user->load('company'),
             'verification_required' => true,
         ], 201);

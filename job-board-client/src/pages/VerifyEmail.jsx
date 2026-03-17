@@ -27,11 +27,6 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
-  const resendSuccessMessage = t('auth.verifyResent')
-  const safeResendSuccessMessage =
-    resendSuccessMessage === 'auth.verifyResent'
-      ? 'Verification code sent again. Check your inbox.'
-      : resendSuccessMessage
 
   const formattedCooldown = useMemo(() => {
     if (resendCooldown <= 0) return null
@@ -110,7 +105,7 @@ export default function VerifyEmail() {
 
     try {
       const { data } = await api.post('/auth/email/verification-notification', { email })
-      toast.success(safeResendSuccessMessage, { duration: 5000 })
+      toast.success(data?.message || t('auth.verifyResent'), { duration: 5000 })
       const retryAfterSeconds = Number(data?.retry_after_seconds || 60)
       const safeRetryAfterSeconds = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
         ? retryAfterSeconds

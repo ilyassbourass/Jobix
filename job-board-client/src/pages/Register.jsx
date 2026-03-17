@@ -48,12 +48,18 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (!form.username.trim()) {
+      setError(t('auth.usernameRequired'))
+      return
+    }
+
     setLoading(true)
 
     try {
       const payload = {
         name: form.name,
-        username: form.username || undefined,
+        username: form.username.trim(),
         email: form.email,
         password: form.password,
         password_confirmation: form.password_confirmation,
@@ -130,11 +136,12 @@ export default function Register() {
                 <label className={labelClass}>{t('auth.username')}</label>
                 <Input
                   id="username"
-                  name="public_username"
+                  name="username"
                   autoComplete="nickname"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  required
                   value={form.username}
                   onChange={handleUsernameChange}
                   placeholder={t('auth.usernamePlaceholder')}

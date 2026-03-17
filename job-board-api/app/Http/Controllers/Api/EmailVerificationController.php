@@ -7,8 +7,6 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-
 class EmailVerificationController extends Controller
 {
     private const RESEND_COOLDOWN_SECONDS = 60;
@@ -90,7 +88,7 @@ class EmailVerificationController extends Controller
             ], 422);
         }
 
-        if (!Hash::check($validated['code'], $user->email_verification_code)) {
+        if (!$user->hasMatchingEmailVerificationCode($validated['code'])) {
             return response()->json([
                 'message' => 'The verification code is incorrect. Please try again.',
             ], 422);
