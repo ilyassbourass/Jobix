@@ -106,6 +106,7 @@ export default function VerifyEmail() {
     try {
       const { data } = await api.post('/auth/email/verification-notification', { email })
       toast.success(data?.message || t('auth.verifyResent'), { duration: 5000 })
+      setCode('')
       const retryAfterSeconds = Number(data?.retry_after_seconds || 60)
       const safeRetryAfterSeconds = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
         ? retryAfterSeconds

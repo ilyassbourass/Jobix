@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Crypt;
 use Tests\Concerns\AuthenticatesWithJwt;
 use Tests\TestCase;
 
@@ -95,7 +94,7 @@ class EmailVerificationFlowTest extends TestCase
         $user = User::factory()->unverified()->create();
         $user->sendEmailVerificationNotification();
 
-        $code = Crypt::decryptString($user->fresh()->email_verification_code);
+        $code = $user->fresh()->currentEmailVerificationCode();
 
         $response = $this->postJson('/api/auth/verify-email', [
             'email' => $user->email,
@@ -119,7 +118,7 @@ class EmailVerificationFlowTest extends TestCase
             'email_verification_sent_at' => now()->subMinutes(2),
         ])->save();
 
-        $originalCode = Crypt::decryptString($user->fresh()->email_verification_code);
+        $originalCode = $user->fresh()->currentEmailVerificationCode();
 
         $response = $this->postJson('/api/auth/email/verification-notification', [
             'email' => $user->email,
@@ -129,9 +128,12 @@ class EmailVerificationFlowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('message', 'A new verification code has been sent to your email.');
 
-        $resentCode = Crypt::decryptString($user->fresh()->email_verification_code);
+        $user = $user->fresh();
+        $resentCode = $user->currentEmailVerificationCode();
 
-        $this->assertSame($originalCode, $resentCode);
+        $this->assertNotSame($originalCode, $resentCode);
+        $this->assertTrue($user->hasMatchingEmailVerificationCode($originalCode));
+        $this->assertTrue($user->hasMatchingEmailVerificationCode($resentCode));
 
         $verifyResponse = $this->postJson('/api/auth/verify-email', [
             'email' => $user->email,

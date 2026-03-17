@@ -45,7 +45,7 @@ class EmailVerificationController extends Controller
             ], 429);
         }
 
-        $user->sendEmailVerificationNotification();
+        $user->sendEmailVerificationNotification(true);
 
         return response()->json([
             'message' => 'A new verification code has been sent to your email.',

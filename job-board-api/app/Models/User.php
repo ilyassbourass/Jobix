@@ -107,29 +107,36 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         ];
     }
 
-    public function sendEmailVerificationNotification(): void
+    public function sendEmailVerificationNotification(bool $forceNewCode = false): void
     {
-        $code = $this->generateEmailVerificationCode();
+        $code = $this->generateEmailVerificationCode($forceNewCode);
         $this->notify(new VerifyEmailNotification($code));
     }
 
-    public function generateEmailVerificationCode(): string
+    public function generateEmailVerificationCode(bool $forceNewCode = false): string
     {
-        $existingCode = $this->currentEmailVerificationCode();
+        $payload = $this->currentEmailVerificationPayload();
+        $latestCode = $payload['codes'][0] ?? null;
 
-        if ($existingCode !== null) {
+        if (!$forceNewCode && $latestCode !== null) {
             $this->forceFill([
                 'email_verification_sent_at' => now(),
             ])->save();
 
-            return $existingCode;
+            return $latestCode;
         }
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiresAt = now()->addMinutes((int) config('auth.verification.expire', 10));
+        $codes = $payload['codes'] ?? [];
+        array_unshift($codes, $code);
+        $codes = array_values(array_unique(array_filter($codes)));
+        $codes = array_slice($codes, 0, 3);
 
         $this->forceFill([
-            'email_verification_code' => Crypt::encryptString($code),
+            'email_verification_code' => Crypt::encryptString(json_encode([
+                'codes' => $codes,
+            ], JSON_THROW_ON_ERROR)),
             'email_verification_expires_at' => $expiresAt,
             'email_verification_sent_at' => now(),
         ])->save();
@@ -139,19 +146,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function currentEmailVerificationCode(): ?string
     {
-        if (
-            empty($this->email_verification_code)
-            || !$this->email_verification_expires_at
-            || now()->greaterThan($this->email_verification_expires_at)
-        ) {
-            return null;
-        }
-
-        try {
-            return Crypt::decryptString($this->email_verification_code);
-        } catch (DecryptException) {
-            return null;
-        }
+        return $this->currentEmailVerificationPayload()['codes'][0] ?? null;
     }
 
     public function hasMatchingEmailVerificationCode(string $code): bool
@@ -160,11 +155,46 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             return false;
         }
 
+        $payload = $this->currentEmailVerificationPayload();
+        if (!empty($payload['codes'])) {
+            return in_array($code, $payload['codes'], true);
+        }
+
         try {
             return hash_equals($code, Crypt::decryptString($this->email_verification_code));
         } catch (DecryptException) {
             return Hash::check($code, $this->email_verification_code);
         }
+    }
+
+    private function currentEmailVerificationPayload(): array
+    {
+        if (
+            empty($this->email_verification_code)
+            || !$this->email_verification_expires_at
+            || now()->greaterThan($this->email_verification_expires_at)
+        ) {
+            return ['codes' => []];
+        }
+
+        try {
+            $decrypted = Crypt::decryptString($this->email_verification_code);
+            $decoded = json_decode($decrypted, true);
+
+            if (is_array($decoded) && isset($decoded['codes']) && is_array($decoded['codes'])) {
+                return [
+                    'codes' => array_values(array_filter($decoded['codes'], 'is_string')),
+                ];
+            }
+
+            if (is_string($decrypted) && preg_match('/^\d{6}$/', $decrypted)) {
+                return ['codes' => [$decrypted]];
+            }
+        } catch (DecryptException) {
+            return ['codes' => []];
+        }
+
+        return ['codes' => []];
     }
 
     public function clearEmailVerificationCode(): void
