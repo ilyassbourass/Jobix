@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -71,54 +70,52 @@ class AuthController extends Controller
             ], 409);
         }
 
-        $user = DB::transaction(function () use ($validated, $existingUser, $requestedUsername) {
-            $company = null;
+        $company = null;
 
-            if ($validated['role'] === 'company' && !empty($validated['company_name'])) {
-                if ($existingUser?->company) {
-                    $existingUser->company->update([
-                        'name' => $validated['company_name'],
-                        'slug' => Company::generateSlug($validated['company_name'], $existingUser->company->id),
-                        'description' => $validated['company_description'] ?? null,
-                        'website' => $validated['company_website'] ?? null,
-                        'location' => $validated['company_location'] ?? null,
-                        'industry' => $validated['company_industry'] ?? null,
-                    ]);
-                    $company = $existingUser->company->fresh();
-                } else {
-                    $company = Company::create([
-                        'name' => $validated['company_name'],
-                        'slug' => Company::generateSlug($validated['company_name']),
-                        'description' => $validated['company_description'] ?? null,
-                        'website' => $validated['company_website'] ?? null,
-                        'location' => $validated['company_location'] ?? null,
-                        'industry' => $validated['company_industry'] ?? null,
-                    ]);
-                }
+        if ($validated['role'] === 'company' && !empty($validated['company_name'])) {
+            if ($existingUser?->company) {
+                $existingUser->company->update([
+                    'name' => $validated['company_name'],
+                    'slug' => Company::generateSlug($validated['company_name'], $existingUser->company->id),
+                    'description' => $validated['company_description'] ?? null,
+                    'website' => $validated['company_website'] ?? null,
+                    'location' => $validated['company_location'] ?? null,
+                    'industry' => $validated['company_industry'] ?? null,
+                ]);
+                $company = $existingUser->company->fresh();
+            } else {
+                $company = Company::create([
+                    'name' => $validated['company_name'],
+                    'slug' => Company::generateSlug($validated['company_name']),
+                    'description' => $validated['company_description'] ?? null,
+                    'website' => $validated['company_website'] ?? null,
+                    'location' => $validated['company_location'] ?? null,
+                    'industry' => $validated['company_industry'] ?? null,
+                ]);
             }
+        }
 
-            if ($existingUser) {
-                $username = $requestedUsername
-                    ?: ($existingUser->username ?: static::generateUsername($validated['name']));
+        if ($existingUser) {
+            $username = $requestedUsername
+                ?: ($existingUser->username ?: static::generateUsername($validated['name']));
 
-                $existingUser->forceFill([
-                    'name' => $validated['name'],
-                    'username' => $username,
-                    'password' => Hash::make($validated['password']),
-                    'role' => $validated['role'],
-                    'company_id' => $company?->id,
-                    'phone' => $validated['phone'] ?? null,
-                    'email_verification_code' => null,
-                    'email_verification_expires_at' => null,
-                    'email_verification_sent_at' => null,
-                ])->save();
+            $existingUser->forceFill([
+                'name' => $validated['name'],
+                'username' => $username,
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+                'company_id' => $company?->id,
+                'phone' => $validated['phone'] ?? null,
+                'email_verification_code' => null,
+                'email_verification_expires_at' => null,
+                'email_verification_sent_at' => null,
+            ])->save();
 
-                return $existingUser->refresh();
-            }
-
+            $user = $existingUser->fresh();
+        } else {
             $username = $requestedUsername ?: static::generateUsername($validated['name']);
 
-            return User::create([
+            $createdUser = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'username' => $username,
@@ -127,7 +124,9 @@ class AuthController extends Controller
                 'company_id' => $company?->id,
                 'phone' => $validated['phone'] ?? null,
             ]);
-        });
+
+            $user = User::query()->findOrFail($createdUser->id);
+        }
 
         $verificationEmailQueued = true;
 

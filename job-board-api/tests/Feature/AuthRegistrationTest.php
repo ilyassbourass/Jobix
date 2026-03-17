@@ -30,4 +30,33 @@ class AuthRegistrationTest extends TestCase
 
         $this->assertNotEmpty($response->json('user.username'));
     }
+
+    public function test_new_registration_can_resend_verification_code_after_cooldown(): void
+    {
+        Notification::fake();
+        Mail::fake();
+
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Flow Debug',
+            'username' => 'flowdebug',
+            'email' => 'flowdebug@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'role' => 'job_seeker',
+        ]);
+
+        $response->assertCreated();
+
+        $this->travel(61)->seconds();
+
+        $resendResponse = $this->postJson('/api/auth/email/verification-notification', [
+            'email' => 'flowdebug@example.com',
+            'user_id' => $response->json('user.id'),
+        ]);
+
+        $resendResponse
+            ->assertOk()
+            ->assertJsonPath('email', 'flowdebug@example.com')
+            ->assertJsonPath('user_id', $response->json('user.id'));
+    }
 }
