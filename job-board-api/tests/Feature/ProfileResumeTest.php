@@ -83,4 +83,62 @@ class ProfileResumeTest extends TestCase
 
         $logoResponse->assertOk();
     }
+
+    public function test_profile_password_change_allows_blank_portfolio_url(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'job_seeker',
+            'username' => 'portfolio-owner',
+            'password' => bcrypt('OldPassword123!'),
+            'portfolio_url' => null,
+        ]);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($user))
+            ->post('/api/user/profile', [
+                '_method' => 'PUT',
+                'name' => $user->name,
+                'username' => $user->username,
+                'portfolio_url' => '',
+                'current_password' => 'OldPassword123!',
+                'password' => 'NewPassword123!',
+                'password_confirmation' => 'NewPassword123!',
+            ]);
+
+        $response->assertOk();
+
+        $user->refresh();
+
+        $this->assertNull($user->portfolio_url);
+        $this->assertTrue(password_verify('NewPassword123!', $user->password));
+    }
+
+    public function test_profile_password_change_normalizes_portfolio_url_without_scheme(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'job_seeker',
+            'username' => 'portfolio-owner-2',
+            'password' => bcrypt('OldPassword123!'),
+            'portfolio_url' => null,
+        ]);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($user))
+            ->post('/api/user/profile', [
+                '_method' => 'PUT',
+                'name' => $user->name,
+                'username' => $user->username,
+                'portfolio_url' => 'portfolio.example.com/me',
+                'current_password' => 'OldPassword123!',
+                'password' => 'NewPassword123!',
+                'password_confirmation' => 'NewPassword123!',
+            ]);
+
+        $response->assertOk();
+
+        $user->refresh();
+
+        $this->assertSame('https://portfolio.example.com/me', $user->portfolio_url);
+        $this->assertTrue(password_verify('NewPassword123!', $user->password));
+    }
 }

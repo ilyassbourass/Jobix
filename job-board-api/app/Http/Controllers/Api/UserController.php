@@ -26,6 +26,10 @@ class UserController extends Controller
             return null;
         }
 
+        if (!preg_match('#^https?://#i', $value) && preg_match('/^[^\s]+\.[^\s]+$/', $value)) {
+            return 'https://' . $value;
+        }
+
         return $value;
     }
 
@@ -43,6 +47,7 @@ class UserController extends Controller
             'linkedin_url' => $this->normalizeProfileUrl($request->input('linkedin_url')),
             'github_url' => $this->normalizeProfileUrl($request->input('github_url')),
             'portfolio_url' => $this->normalizeProfileUrl($request->input('portfolio_url')),
+            'company_website' => $this->normalizeProfileUrl($request->input('company_website')),
         ]);
         if ($request->filled('username')) {
             $normalized = preg_replace('/[^a-zA-Z0-9]/', '', (string) $request->input('username'));
