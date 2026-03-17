@@ -131,12 +131,10 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         $codes = $payload['codes'] ?? [];
         array_unshift($codes, $code);
         $codes = array_values(array_unique(array_filter($codes)));
-        $codes = array_slice($codes, 0, 3);
+        $codes = array_slice($codes, 0, 2);
 
         $this->forceFill([
-            'email_verification_code' => Crypt::encryptString(json_encode([
-                'codes' => $codes,
-            ], JSON_THROW_ON_ERROR)),
+            'email_verification_code' => Crypt::encryptString(implode('|', $codes)),
             'email_verification_expires_at' => $expiresAt,
             'email_verification_sent_at' => now(),
         ])->save();
@@ -189,6 +187,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
             if (is_string($decrypted) && preg_match('/^\d{6}$/', $decrypted)) {
                 return ['codes' => [$decrypted]];
+            }
+
+            if (is_string($decrypted) && preg_match('/^\d{6}(?:\|\d{6})+$/', $decrypted)) {
+                return [
+                    'codes' => array_values(array_filter(explode('|', $decrypted), 'is_string')),
+                ];
             }
         } catch (DecryptException) {
             return ['codes' => []];
