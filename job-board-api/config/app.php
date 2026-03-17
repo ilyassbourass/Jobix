@@ -58,11 +58,6 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
-    'database_setup' => [
-        'route_enabled' => env('DB_SETUP_ROUTE_ENABLED', false),
-        'route_token' => env('DB_SETUP_ROUTE_TOKEN'),
-    ],
-
     'asset_url' => env('ASSET_URL', '/'),
 
     /*
