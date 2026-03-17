@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Application;
 use App\Models\Job;
+use App\Support\Uploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -100,7 +102,27 @@ class JobController extends Controller
         if ($job->company_id !== $request->user()->company_id) {
             return response()->json(['message' => 'You do not have permission to manage this job posting.'], 403);
         }
+
+        $resumePaths = Application::query()
+            ->where('job_id', $job->id)
+            ->whereNotNull('resume_path')
+            ->pluck('resume_path')
+            ->filter()
+            ->values()
+            ->all();
+
         $job->delete();
+
+        foreach (array_unique($resumePaths) as $path) {
+            try {
+                if (Uploads::disk()->exists($path)) {
+                    Uploads::disk()->delete($path);
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return response()->json(['message' => 'Job posting deleted successfully.']);
     }
 

@@ -18,7 +18,11 @@ class PasswordResetController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        Password::sendResetLink(['email' => $validated['email']]);
+        try {
+            Password::sendResetLink(['email' => $validated['email']]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return response()->json([
             'message' => 'If an account exists for this email, a reset link has been sent.',

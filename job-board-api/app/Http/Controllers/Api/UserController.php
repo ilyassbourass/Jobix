@@ -310,9 +310,13 @@ class UserController extends Controller
 
     private function resolvePublicUser(string $username): User
     {
-        return User::where('username', $username)
-            ->orWhere('id', (int) $username)
-            ->firstOrFail();
+        $query = User::where('username', $username);
+
+        if (ctype_digit($username)) {
+            $query->orWhere('id', (int) $username);
+        }
+
+        return $query->firstOrFail();
     }
 
     private function canDownloadResumeForViewer(User $authUser, User $userModel): bool

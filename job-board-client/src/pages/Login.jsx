@@ -17,8 +17,6 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
-
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('session') === 'expired') {
@@ -28,6 +26,8 @@ export default function Login() {
 
     setError('')
   }, [location.search])
+
+  if (user) return <Navigate to="/" replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()

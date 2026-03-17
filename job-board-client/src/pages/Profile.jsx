@@ -8,11 +8,13 @@ import api from '../api/axios'
 import PageHeader from '../components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import ProfileImage from '../components/ProfileImage'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { useI18n } from '../context/I18nContext'
+import { WORK_MODES } from '../constants'
 
 const getFilenameFromHeaders = (headers = {}) => {
   const contentDisposition = headers['content-disposition'] || headers['Content-Disposition']
@@ -40,7 +42,12 @@ export default function Profile() {
     password_confirmation: '',
     bio: '',
     headline: '',
+    seniority: '',
+    availability: '',
+    preferred_work_mode: '',
+    experience: '',
     projects: '',
+    skills_with_level: '',
     skills: '',
     location: '',
     linkedin_url: '',
@@ -77,7 +84,12 @@ export default function Profile() {
       password_confirmation: '',
       bio: user.bio || '',
       headline: user.headline || '',
+      seniority: user.seniority || '',
+      availability: user.availability || '',
+      preferred_work_mode: user.preferred_work_mode || '',
+      experience: user.experience || '',
       projects: user.projects || '',
+      skills_with_level: user.skills_with_level || '',
       skills: user.skills || '',
       location: user.location || '',
       linkedin_url: user.linkedin_url || '',
@@ -150,7 +162,12 @@ export default function Profile() {
     if (user.role === 'job_seeker') {
       formData.append('bio', form.bio)
       formData.append('headline', form.headline)
+      formData.append('seniority', form.seniority)
+      formData.append('availability', form.availability)
+      formData.append('preferred_work_mode', form.preferred_work_mode)
+      formData.append('experience', form.experience)
       formData.append('projects', form.projects)
+      formData.append('skills_with_level', form.skills_with_level)
       formData.append('skills', form.skills)
       formData.append('location', form.location)
       formData.append('linkedin_url', form.linkedin_url)
@@ -375,6 +392,49 @@ export default function Profile() {
                           rows={4}
                         />
                       </div>
+                      <div>
+                        <label className={labelClass}>{t('profile.seniority')}</label>
+                        <Input
+                          name="seniority"
+                          value={form.seniority}
+                          onChange={handleChange}
+                          placeholder={t('profile.seniorityPlaceholder')}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>{t('profile.availability')}</label>
+                        <Input
+                          name="availability"
+                          value={form.availability}
+                          onChange={handleChange}
+                          placeholder={t('profile.availabilityPlaceholder')}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>{t('profile.preferredWorkMode')}</label>
+                        <Select
+                          name="preferred_work_mode"
+                          value={form.preferred_work_mode}
+                          onChange={handleChange}
+                        >
+                          <option value="">{t('profile.notSpecified')}</option>
+                          {Object.entries(WORK_MODES).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {tOption('workModes', value, label)}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={labelClass}>{t('profile.experienceDetails')}</label>
+                        <Textarea
+                          name="experience"
+                          value={form.experience}
+                          onChange={handleChange}
+                          placeholder={t('profile.experiencePlaceholder')}
+                          rows={3}
+                        />
+                      </div>
                       <div className="sm:col-span-2">
                         <label className={labelClass}>{t('profile.projects')}</label>
                         <Textarea
@@ -395,6 +455,15 @@ export default function Profile() {
                           value={form.skills}
                           onChange={handleChange}
                           placeholder={t('profile.skillsPlaceholder')}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>{t('profile.skillsWithLevel')}</label>
+                        <Input
+                          name="skills_with_level"
+                          value={form.skills_with_level}
+                          onChange={handleChange}
+                          placeholder={t('profile.skillsWithLevelPlaceholder')}
                         />
                       </div>
                       <div>

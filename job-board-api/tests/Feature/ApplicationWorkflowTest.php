@@ -114,6 +114,51 @@ class ApplicationWorkflowTest extends TestCase
         Storage::disk('uploads')->assertExists($resumePath);
     }
 
+    public function test_deleting_a_job_cleans_up_uploaded_application_resume_copies(): void
+    {
+        Mail::fake();
+        Storage::fake('uploads');
+
+        $company = Company::factory()->create();
+        $companyUser = User::factory()->create([
+            'role' => 'company',
+            'company_id' => $company->id,
+            'username' => 'job-owner',
+        ]);
+        $candidate = User::factory()->create([
+            'role' => 'job_seeker',
+            'username' => 'job-candidate',
+        ]);
+        $category = Category::create([
+            'name' => 'Engineering',
+            'slug' => 'engineering',
+            'description' => 'Engineering roles',
+        ]);
+        $job = Job::factory()->create([
+            'company_id' => $company->id,
+            'category_id' => $category->id,
+            'is_active' => true,
+            'published_at' => now()->subDay(),
+            'expires_at' => now()->addDays(30),
+        ]);
+        $application = Application::create([
+            'job_id' => $job->id,
+            'user_id' => $candidate->id,
+            'resume_path' => 'application-resumes/' . $candidate->id . '/job-delete.pdf',
+            'status' => 'pending',
+        ]);
+
+        Storage::disk('uploads')->put($application->resume_path, 'resume copy');
+
+        $this->withHeaders($this->authHeaders($companyUser))
+            ->deleteJson("/api/jobs/{$job->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('jobs', ['id' => $job->id]);
+        $this->assertDatabaseMissing('applications', ['id' => $application->id]);
+        Storage::disk('uploads')->assertMissing($application->resume_path);
+    }
+
     private function makeCompanyApplicationFixture(): array
     {
         $company = Company::factory()->create();

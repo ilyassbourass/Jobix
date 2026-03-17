@@ -96,6 +96,18 @@ class PublicProfileTest extends TestCase
             ->assertJsonPath('can_download', false);
     }
 
+    public function test_public_profile_does_not_treat_partially_numeric_username_as_user_id(): void
+    {
+        User::factory()->count(4)->create();
+        User::factory()->create([
+            'role' => 'job_seeker',
+            'username' => 'actual-user',
+        ]);
+
+        $this->getJson('/api/users/5abc')
+            ->assertNotFound();
+    }
+
     private function makeResumeAccessFixture(): array
     {
         Storage::fake('uploads');

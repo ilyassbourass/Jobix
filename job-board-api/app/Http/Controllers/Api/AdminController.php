@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\Company;
 use App\Models\Job;
 use App\Models\User;
+use App\Support\Uploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -162,7 +164,102 @@ class AdminController extends Controller
         if ($user->role === 'admin') {
             return response()->json(['message' => 'Administrator accounts cannot be deleted.'], 403);
         }
-        $user->delete();
+
+        $pathsToDelete = [];
+
+        DB::transaction(function () use ($user, &$pathsToDelete) {
+            $pathsToDelete = array_merge(
+                $this->collectUserOwnedFilePaths($user),
+                $this->collectUserApplicationResumePaths($user->id)
+            );
+
+            DB::table('notifications')
+                ->where('notifiable_type', User::class)
+                ->where('notifiable_id', $user->id)
+                ->delete();
+
+            if ($user->isCompany() && $user->company_id) {
+                $company = Company::find($user->company_id);
+
+                if ($company && !$company->users()->where('users.id', '!=', $user->id)->exists()) {
+                    $pathsToDelete = array_merge(
+                        $pathsToDelete,
+                        $this->collectCompanyOwnedFilePaths($company)
+                    );
+
+                    $company->delete();
+                }
+            }
+
+            $user->delete();
+        });
+
+        $this->deleteUploadPaths($pathsToDelete);
+
         return response()->json(['message' => 'User deleted successfully.']);
+    }
+
+    private function collectUserOwnedFilePaths(User $user): array
+    {
+        $paths = [];
+
+        if (!empty($user->avatar)) {
+            $paths[] = str_contains($user->avatar, '/')
+                ? ltrim($user->avatar, '/')
+                : 'avatars/' . ltrim($user->avatar, '/');
+        }
+
+        if (!empty($user->resume_path)) {
+            $paths[] = $user->resume_path;
+        }
+
+        return $paths;
+    }
+
+    private function collectUserApplicationResumePaths(int $userId): array
+    {
+        return Application::query()
+            ->where('user_id', $userId)
+            ->whereNotNull('resume_path')
+            ->pluck('resume_path')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function collectCompanyOwnedFilePaths(Company $company): array
+    {
+        $paths = [];
+
+        if (!empty($company->logo)) {
+            $paths[] = $company->logo;
+        }
+
+        $applicationResumePaths = Application::query()
+            ->whereHas('job', function ($query) use ($company) {
+                $query->where('company_id', $company->id);
+            })
+            ->whereNotNull('resume_path')
+            ->pluck('resume_path')
+            ->filter()
+            ->values()
+            ->all();
+
+        return array_merge($paths, $applicationResumePaths);
+    }
+
+    private function deleteUploadPaths(array $paths): void
+    {
+        $paths = array_values(array_unique(array_filter($paths)));
+
+        foreach ($paths as $path) {
+            try {
+                if (Uploads::disk()->exists($path)) {
+                    Uploads::disk()->delete($path);
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 }
