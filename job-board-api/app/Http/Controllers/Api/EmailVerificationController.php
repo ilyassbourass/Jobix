@@ -13,16 +13,27 @@ class EmailVerificationController extends Controller
 
     public function send(Request $request): JsonResponse
     {
-        $email = $request->user()?->email;
+        $validated = $request->validate([
+            'email' => ['nullable', 'email'],
+            'user_id' => ['nullable', 'integer'],
+        ]);
 
-        if (!$email) {
-            $validated = $request->validate([
-                'email' => ['required', 'email'],
-            ]);
-            $email = $validated['email'];
+        $email = $request->user()?->email;
+        $userId = $validated['user_id'] ?? null;
+
+        if ($userId) {
+            $user = User::find($userId);
+
+            if ($user) {
+                $email = $user->email;
+            }
         }
 
-        $user = User::where('email', $email)->first();
+        if (!$email) {
+            $email = $validated['email'] ?? null;
+        }
+
+        $user = ($user ?? null) ?: User::where('email', $email)->first();
 
         if (!$user) {
             return response()->json([
@@ -58,9 +69,18 @@ class EmailVerificationController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email'],
             'code' => ['required', 'digits:6'],
+            'user_id' => ['nullable', 'integer'],
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $user = isset($validated['user_id'])
+            ? User::find($validated['user_id'])
+            : null;
+
+        if ($user && $user->email !== $validated['email']) {
+            $user = null;
+        }
+
+        $user = $user ?: User::where('email', $validated['email'])->first();
 
         if (!$user) {
             return response()->json([

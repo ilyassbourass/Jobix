@@ -142,4 +142,24 @@ class EmailVerificationFlowTest extends TestCase
 
         $verifyResponse->assertOk();
     }
+
+    public function test_resend_can_target_the_pending_user_by_id(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create([
+            'email_verification_sent_at' => now()->subMinutes(2),
+        ]);
+
+        $response = $this->postJson('/api/auth/email/verification-notification', [
+            'email' => 'wrong@example.com',
+            'user_id' => $user->id,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'A new verification code has been sent to your email.');
+
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
 }

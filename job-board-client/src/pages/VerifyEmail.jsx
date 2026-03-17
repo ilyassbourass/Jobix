@@ -16,12 +16,19 @@ export default function VerifyEmail() {
   const resendEmailKey = 'verifyResendEmail'
   const resendUntilKey = 'verifyResendUntil'
   const pendingEmailKey = 'pendingVerificationEmail'
+  const pendingUserIdKey = 'pendingVerificationUserId'
   const storedPendingEmail = localStorage.getItem(pendingEmailKey) || ''
   const storedResendEmail = localStorage.getItem(resendEmailKey) || ''
+  const storedPendingUserId = localStorage.getItem(pendingUserIdKey) || ''
   const initialEmail =
     location.state?.email || storedPendingEmail || storedResendEmail || ''
+  const initialUserId =
+    location.state?.userId ||
+    (storedPendingEmail && storedPendingEmail === initialEmail ? storedPendingUserId : '') ||
+    ''
 
   const [email, setEmail] = useState(initialEmail)
+  const [userId, setUserId] = useState(initialUserId)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -62,6 +69,13 @@ export default function VerifyEmail() {
   }, [email, storedResendEmail, pendingEmailKey])
 
   useEffect(() => {
+    if (!userId && storedPendingUserId) {
+      setUserId(storedPendingUserId)
+      localStorage.setItem(pendingUserIdKey, storedPendingUserId)
+    }
+  }, [userId, storedPendingUserId, pendingUserIdKey])
+
+  useEffect(() => {
     if (!email) return
     const storedEmail = localStorage.getItem(resendEmailKey)
     if (storedEmail && storedEmail !== email) {
@@ -87,8 +101,15 @@ export default function VerifyEmail() {
     setLoading(true)
 
     try {
-      await api.post('/auth/verify-email', { email, code })
+      await api.post('/auth/verify-email', {
+        email,
+        code,
+        user_id: userId || undefined,
+      })
       localStorage.removeItem('pendingVerificationEmail')
+      localStorage.removeItem(resendEmailKey)
+      localStorage.removeItem(resendUntilKey)
+      localStorage.removeItem(pendingUserIdKey)
       toast.success(t('auth.verifySuccess'), { duration: 5000 })
       navigate('/login', { replace: true })
     } catch (err) {
@@ -104,7 +125,10 @@ export default function VerifyEmail() {
     setResending(true)
 
     try {
-      const { data } = await api.post('/auth/email/verification-notification', { email })
+      const { data } = await api.post('/auth/email/verification-notification', {
+        email,
+        user_id: userId || undefined,
+      })
       toast.success(data?.message || t('auth.verifyResent'), { duration: 5000 })
       setCode('')
       const retryAfterSeconds = Number(data?.retry_after_seconds || 60)
@@ -115,6 +139,9 @@ export default function VerifyEmail() {
       localStorage.setItem(resendEmailKey, email)
       localStorage.setItem(resendUntilKey, String(until))
       localStorage.setItem(pendingEmailKey, email)
+      if (userId) {
+        localStorage.setItem(pendingUserIdKey, String(userId))
+      }
       setResendCooldown(safeRetryAfterSeconds)
     } catch (err) {
       const retryAfter = Number(err.response?.data?.retry_after_seconds || 0)
@@ -123,6 +150,9 @@ export default function VerifyEmail() {
         localStorage.setItem(resendEmailKey, email)
         localStorage.setItem(resendUntilKey, String(until))
         localStorage.setItem(pendingEmailKey, email)
+        if (userId) {
+          localStorage.setItem(pendingUserIdKey, String(userId))
+        }
         setResendCooldown(retryAfter)
       }
       setError(err.response?.data?.message || t('auth.verifyFailed'))

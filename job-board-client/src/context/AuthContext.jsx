@@ -13,6 +13,9 @@ const getDefaultRouteForRole = (role) => {
   return '/'
 }
 
+const pendingVerificationEmailKey = 'pendingVerificationEmail'
+const pendingVerificationUserIdKey = 'pendingVerificationUserId'
+
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,9 +33,13 @@ export const AuthProvider = ({ children }) => {
     if (nextUser) {
       localStorage.setItem('user', JSON.stringify(nextUser))
       if (nextUser.email_verified_at) {
-        localStorage.removeItem('pendingVerificationEmail')
+        localStorage.removeItem(pendingVerificationEmailKey)
+        localStorage.removeItem(pendingVerificationUserIdKey)
       } else if (nextUser.email) {
-        localStorage.setItem('pendingVerificationEmail', nextUser.email)
+        localStorage.setItem(pendingVerificationEmailKey, nextUser.email)
+        if (nextUser.id) {
+          localStorage.setItem(pendingVerificationUserIdKey, String(nextUser.id))
+        }
       }
       return
     }
@@ -84,7 +91,8 @@ export const AuthProvider = ({ children }) => {
       return { success: true }
     } catch (error) {
       if (error.response?.status === 403 && error.response?.data?.verification_required) {
-        localStorage.setItem('pendingVerificationEmail', credentials.email)
+        localStorage.setItem(pendingVerificationEmailKey, credentials.email)
+        localStorage.removeItem(pendingVerificationUserIdKey)
         navigate('/verify-email', { replace: true, state: { email: credentials.email } })
         toast.error(error.response?.data?.message || t('auth.verifyRequired'))
         return { verificationRequired: true }
@@ -96,9 +104,21 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (payload) => {
     const { data } = await api.post('/auth/register', payload)
-    const email = payload.email
-    localStorage.setItem('pendingVerificationEmail', email)
-    navigate('/verify-email', { replace: true, state: { email } })
+    const email = data?.user?.email || payload.email
+    const pendingUserId = data?.user?.id
+    localStorage.setItem(pendingVerificationEmailKey, email)
+    if (pendingUserId) {
+      localStorage.setItem(pendingVerificationUserIdKey, String(pendingUserId))
+    } else {
+      localStorage.removeItem(pendingVerificationUserIdKey)
+    }
+    navigate('/verify-email', {
+      replace: true,
+      state: {
+        email,
+        userId: pendingUserId ?? null,
+      },
+    })
     toast.success(data?.message || t('auth.verifyPrompt'))
   }
 
