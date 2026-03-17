@@ -129,6 +129,16 @@ export default function VerifyEmail() {
         email,
         user_id: userId || undefined,
       })
+      const resolvedEmail = data?.email || email
+      const resolvedUserId = data?.user_id || userId
+
+      if (resolvedEmail !== email) {
+        setEmail(resolvedEmail)
+      }
+      if (resolvedUserId && String(resolvedUserId) !== String(userId || '')) {
+        setUserId(String(resolvedUserId))
+      }
+
       toast.success(data?.message || t('auth.verifyResent'), { duration: 5000 })
       setCode('')
       const retryAfterSeconds = Number(data?.retry_after_seconds || 60)
@@ -136,11 +146,11 @@ export default function VerifyEmail() {
         ? retryAfterSeconds
         : 60
       const until = Date.now() + safeRetryAfterSeconds * 1000
-      localStorage.setItem(resendEmailKey, email)
+      localStorage.setItem(resendEmailKey, resolvedEmail)
       localStorage.setItem(resendUntilKey, String(until))
-      localStorage.setItem(pendingEmailKey, email)
-      if (userId) {
-        localStorage.setItem(pendingUserIdKey, String(userId))
+      localStorage.setItem(pendingEmailKey, resolvedEmail)
+      if (resolvedUserId) {
+        localStorage.setItem(pendingUserIdKey, String(resolvedUserId))
       }
       setResendCooldown(safeRetryAfterSeconds)
     } catch (err) {

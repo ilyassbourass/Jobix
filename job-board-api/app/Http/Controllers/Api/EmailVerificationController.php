@@ -55,6 +55,8 @@ class EmailVerificationController extends Controller
         return response()->json([
             'message' => 'A new verification code has been sent to your email.',
             'retry_after_seconds' => self::RESEND_COOLDOWN_SECONDS,
+            'email' => $user->email,
+            'user_id' => $user->id,
         ]);
     }
 
@@ -134,7 +136,7 @@ class EmailVerificationController extends Controller
         if ($userId) {
             $user = User::find($userId);
 
-            if ($user && (!$email || $this->normalizeEmail($user->email) === $email)) {
+            if ($user) {
                 return $user;
             }
         }
