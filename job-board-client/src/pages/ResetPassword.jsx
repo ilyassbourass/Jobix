@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Briefcase, Lock, Mail } from 'lucide-react'
 import api from '../api/axios'
@@ -13,39 +13,56 @@ export default function ResetPassword() {
   const { user } = useAuth()
   const { token } = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { t } = useI18n()
-  const [email, setEmail] = useState(searchParams.get('email') || '')
+  const linkEmail = useMemo(
+    () => searchParams.get('email')?.trim().toLowerCase() || '',
+    [searchParams]
+  )
+  const emailLocked = Boolean(linkEmail)
+  const [email, setEmail] = useState(linkEmail)
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   if (user) return <Navigate to="/" replace />
 
+  useEffect(() => {
+    if (emailLocked) {
+      setEmail(linkEmail)
+    }
+  }, [emailLocked, linkEmail])
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    setSuccess('')
 
     if (!token) {
       setError(t('auth.resetPasswordInvalid'))
       return
     }
 
+    const resetEmail = (emailLocked ? linkEmail : email).trim().toLowerCase()
     setLoading(true)
 
     try {
       const { data } = await api.post('/auth/reset-password', {
         token,
-        email,
+        email: resetEmail,
         password,
         password_confirmation: passwordConfirmation,
       })
 
-      setSuccess(data?.message || t('auth.resetPasswordSuccess'))
       setPassword('')
       setPasswordConfirmation('')
+      navigate('/login', {
+        replace: true,
+        state: {
+          email: resetEmail,
+          message: data?.message || t('auth.resetPasswordSuccess'),
+        },
+      })
     } catch (err) {
       const errors = err.response?.data?.errors
       setError(
@@ -85,13 +102,6 @@ export default function ResetPassword() {
                 {error}
               </div>
             )}
-
-            {success && (
-              <div className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                {success}
-              </div>
-            )}
-
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">
                 {t('auth.email')}
@@ -103,8 +113,14 @@ export default function ResetPassword() {
                   required
                   autoComplete="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="pl-10"
+                  onChange={(event) => {
+                    if (!emailLocked) {
+                      setEmail(event.target.value)
+                    }
+                  }}
+                  readOnly={emailLocked}
+                  aria-readonly={emailLocked}
+                  className={emailLocked ? 'bg-slate-50 pl-10 dark:bg-gray-900/70' : 'pl-10'}
                 />
               </div>
             </div>

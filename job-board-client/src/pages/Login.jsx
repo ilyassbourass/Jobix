@@ -15,23 +15,34 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('session') === 'expired') {
       setError('Your session is no longer valid. Please sign in again.')
-      return
+    } else {
+      setError('')
     }
 
-    setError('')
-  }, [location.search])
+    if (location.state?.email) {
+      setEmail(location.state.email)
+    }
+
+    if (location.state?.message) {
+      setSuccess(location.state.message)
+    } else {
+      setSuccess('')
+    }
+  }, [location.search, location.state])
 
   if (user) return <Navigate to="/" replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     try {
@@ -73,6 +84,11 @@ export default function Login() {
             {error && (
               <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                {success}
               </div>
             )}
             <div>

@@ -14,6 +14,12 @@ class PasswordResetController extends Controller
 {
     public function sendResetLink(Request $request): JsonResponse
     {
+        if ($request->filled('email')) {
+            $request->merge([
+                'email' => strtolower(trim((string) $request->input('email'))),
+            ]);
+        }
+
         $validated = $request->validate([
             'email' => ['required', 'email'],
         ]);
@@ -31,6 +37,12 @@ class PasswordResetController extends Controller
 
     public function reset(Request $request): JsonResponse
     {
+        if ($request->filled('email')) {
+            $request->merge([
+                'email' => strtolower(trim((string) $request->input('email'))),
+            ]);
+        }
+
         $validated = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
