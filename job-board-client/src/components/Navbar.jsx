@@ -80,21 +80,21 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-gray-700/70 dark:bg-gray-900/60 dark:supports-[backdrop-filter]:bg-gray-900/40">
-      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
-        <div className="flex items-center gap-6">
+      <nav className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 md:h-16">
+        <div className="flex min-w-0 items-center gap-3 md:gap-6">
           <Link
             to="/"
-            className="group relative flex h-full items-center gap-3 rounded-xl px-2 py-1 transition-all duration-300 hover:-translate-y-[1px]"
+            className="group relative flex min-w-0 h-full items-center gap-2 rounded-xl px-1.5 py-1 transition-all duration-300 hover:-translate-y-[1px] md:gap-3 md:px-2"
           >
             <span className="pointer-events-none absolute inset-0 -z-10 rounded-xl bg-slate-100/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-white/5" />
-          <img
-            src={logo}
-            alt="Jobix Logo"
-            className="h-14 w-auto shrink-0 transition-transform duration-300 group-hover:scale-105 sm:h-16 dark:brightness-150 dark:contrast-110 dark:saturate-150 dark:hue-rotate-[335deg]"
-          />
-          <span className="brand-text text-3xl font-bold leading-none">
-            Jobix
-          </span>
+            <img
+              src={logo}
+              alt="Jobix Logo"
+              className="h-9 w-auto shrink-0 transition-transform duration-300 group-hover:scale-105 sm:h-10 md:h-16 dark:brightness-150 dark:contrast-110 dark:saturate-150 dark:hue-rotate-[335deg]"
+            />
+            <span className="brand-text truncate text-[1.7rem] font-bold leading-none tracking-tight sm:text-[1.9rem] md:text-3xl">
+              Jobix
+            </span>
             <span className="pointer-events-none absolute -bottom-2 left-1/2 h-0.5 w-2/3 -translate-x-1/2 rounded-full bg-primary-500/40 opacity-0 transition-all duration-300 group-hover:w-full group-hover:opacity-100 dark:bg-primary-300/50" />
           </Link>
 
@@ -120,35 +120,37 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
           {user && <NotificationMenu user={user} />}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 hover:bg-slate-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
-                aria-label={t('nav.language')}
-              >
-                <Languages className="h-4 w-4" />
-                {languageLabels[language]}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              {supportedLanguages.map((lang) => (
-                <DropdownMenuItem
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  className="flex cursor-pointer items-center justify-between"
+          <div className="hidden md:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 hover:bg-slate-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                  aria-label={t('nav.language')}
                 >
-                  <span>{languageNames[lang] || lang}</span>
-                  {language === lang && <Check className="h-4 w-4 text-primary-600 dark:text-primary-300" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <Languages className="h-4 w-4" />
+                  {languageLabels[language]}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                {supportedLanguages.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className="flex cursor-pointer items-center justify-between"
+                  >
+                    <span>{languageNames[lang] || lang}</span>
+                    {language === lang && <Check className="h-4 w-4 text-primary-600 dark:text-primary-300" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <button
             onClick={() => setTheme(!dark)}
-            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-gray-800"
+            className="hidden rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-gray-800 md:inline-flex"
             aria-label={t('nav.toggleTheme')}
           >
             {dark ? <Sun className="h-5 w-5 text-slate-700 dark:text-slate-200" /> : <Moon className="h-5 w-5 text-slate-700 dark:text-slate-200" />}
@@ -209,7 +211,7 @@ export default function Navbar() {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-lg p-2 md:hidden hover:bg-slate-100 dark:hover:bg-slate-900"
+            className="rounded-xl border border-slate-200/80 bg-white/70 p-2 shadow-sm transition hover:bg-slate-100 dark:border-gray-700/80 dark:bg-gray-900/70 dark:hover:bg-gray-800 md:hidden"
             aria-label={mobileOpen ? t('nav.closeMenu') : t('nav.openMenu')}
           >
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -227,6 +229,40 @@ export default function Navbar() {
             className="border-t border-slate-200 bg-white md:hidden dark:border-gray-800 dark:bg-gray-900"
           >
             <div className="space-y-1 px-4 py-4">
+              <div className="mb-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-gray-800 dark:bg-gray-800/60">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                      {t('nav.language')}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {supportedLanguages.map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setLanguage(lang)}
+                          className={[
+                            'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                            language === lang
+                              ? 'border-primary-500 bg-primary-600 text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800',
+                          ].join(' ')}
+                        >
+                          {languageLabels[lang]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTheme(!dark)}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                    aria-label={t('nav.toggleTheme')}
+                  >
+                    {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
               {navLinks.map((link) => (
                 <NavLink
                   key={link.to}

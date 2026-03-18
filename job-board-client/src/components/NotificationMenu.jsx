@@ -174,7 +174,7 @@ export default function NotificationMenu({ user }) {
     <DropdownMenu onOpenChange={(open) => open && refetch()}>
       <DropdownMenuTrigger asChild>
         <button
-          className="relative rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-gray-800"
+          className="relative rounded-xl border border-slate-200/80 bg-white/70 p-2 shadow-sm transition hover:bg-slate-100 dark:border-gray-700/80 dark:bg-gray-900/70 dark:hover:bg-gray-800 md:rounded-lg md:border-0 md:bg-transparent md:shadow-none"
           aria-label={t('notifications.openAria')}
         >
           <Bell className="h-5 w-5 text-slate-700 dark:text-slate-200" />
@@ -186,7 +186,7 @@ export default function NotificationMenu({ user }) {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[360px] p-0">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-1.5rem)] max-w-[360px] p-0">
         <div className="border-b border-slate-200 px-4 py-3 dark:border-gray-700">
           <div className="flex items-center justify-between gap-3">
             <div>
