@@ -15,6 +15,8 @@ const getDefaultRouteForRole = (role) => {
 
 const pendingVerificationEmailKey = 'pendingVerificationEmail'
 const pendingVerificationUserIdKey = 'pendingVerificationUserId'
+const verifyResendEmailKey = 'verifyResendEmail'
+const verifyResendUntilKey = 'verifyResendUntil'
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate()
@@ -120,17 +122,21 @@ export const AuthProvider = ({ children }) => {
     const { data } = await api.post('/auth/register', payload)
     const email = data?.user?.email || payload.email
     const pendingUserId = data?.user?.id
+    const resendUntil = Date.now() + 60 * 1000
     localStorage.setItem(pendingVerificationEmailKey, email)
     if (pendingUserId) {
       localStorage.setItem(pendingVerificationUserIdKey, String(pendingUserId))
     } else {
       localStorage.removeItem(pendingVerificationUserIdKey)
     }
+    localStorage.setItem(verifyResendEmailKey, email)
+    localStorage.setItem(verifyResendUntilKey, String(resendUntil))
     navigate('/verify-email', {
       replace: true,
       state: {
         email,
         userId: pendingUserId ?? null,
+        initialCooldownSeconds: 60,
       },
     })
     toast.success(data?.message || t('auth.verifyPrompt'))

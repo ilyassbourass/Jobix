@@ -34,6 +34,7 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const initialCooldownSeconds = Number(location.state?.initialCooldownSeconds || 0)
 
   const formattedCooldown = useMemo(() => {
     if (resendCooldown <= 0) return null
@@ -60,6 +61,22 @@ export default function VerifyEmail() {
       localStorage.removeItem(resendUntilKey)
     }
   }, [initialEmail, resendEmailKey, resendUntilKey])
+
+  useEffect(() => {
+    if (!initialEmail || initialCooldownSeconds <= 0) return
+
+    const storedEmail = localStorage.getItem(resendEmailKey)
+    const storedUntil = Number(localStorage.getItem(resendUntilKey) || 0)
+
+    if (storedEmail === initialEmail && storedUntil > Date.now()) {
+      return
+    }
+
+    const until = Date.now() + initialCooldownSeconds * 1000
+    localStorage.setItem(resendEmailKey, initialEmail)
+    localStorage.setItem(resendUntilKey, String(until))
+    setResendCooldown(initialCooldownSeconds)
+  }, [initialCooldownSeconds, initialEmail, resendEmailKey, resendUntilKey])
 
   useEffect(() => {
     if (!email && storedResendEmail) {
