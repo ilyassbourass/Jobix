@@ -137,6 +137,8 @@ const translations = {
       resetPasswordFailed: 'We could not reset your password. Please review the form and try again.',
       resetPasswordInvalid: 'This password reset link is invalid or incomplete.',
       newPassword: 'New password',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
       dontHaveAccount: "Don't have an account?",
       signUp: 'Sign up',
       signupTitle: 'Sign up',

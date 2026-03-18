@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import { useI18n } from '../context/I18nContext'
@@ -163,24 +164,26 @@ export default function Register() {
               </div>
               <div>
                 <label className={labelClass}>{t('auth.password')}</label>
-                <Input
-                  type="password"
+                <PasswordInput
                   name="password"
                   required
                   autoComplete="new-password"
                   value={form.password}
                   onChange={handleChange}
+                  showLabel={t('auth.showPassword')}
+                  hideLabel={t('auth.hidePassword')}
                 />
               </div>
               <div>
                 <label className={labelClass}>{t('auth.confirmPassword')}</label>
-                <Input
-                  type="password"
+                <PasswordInput
                   name="password_confirmation"
                   required
                   autoComplete="new-password"
                   value={form.password_confirmation}
                   onChange={handleChange}
+                  showLabel={t('auth.showPassword')}
+                  hideLabel={t('auth.hidePassword')}
                 />
               </div>
             </div>

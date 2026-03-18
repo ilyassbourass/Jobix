@@ -8,6 +8,7 @@ import api from '../api/axios'
 import PageHeader from '../components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
 import { Select } from '../components/ui/Select'
 import { Textarea } from '../components/ui/Textarea'
 import ProfileImage from '../components/ProfileImage'
@@ -630,32 +631,35 @@ export default function Profile() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                       <label className={labelClass}>{t('profile.currentPassword')}</label>
-                      <Input
-                        type="password"
+                      <PasswordInput
                         name="current_password"
                         value={form.current_password}
                         onChange={handleChange}
                         placeholder={t('profile.currentPasswordPlaceholder')}
+                        showLabel={t('auth.showPassword')}
+                        hideLabel={t('auth.hidePassword')}
                       />
                     </div>
                     <div>
                       <label className={labelClass}>{t('profile.newPassword')}</label>
-                      <Input
-                        type="password"
+                      <PasswordInput
                         name="password"
                         value={form.password}
                         onChange={handleChange}
                         placeholder={t('profile.newPasswordPlaceholder')}
+                        showLabel={t('auth.showPassword')}
+                        hideLabel={t('auth.hidePassword')}
                       />
                     </div>
                     <div>
                       <label className={labelClass}>{t('profile.confirmPassword')}</label>
-                      <Input
-                        type="password"
+                      <PasswordInput
                         name="password_confirmation"
                         value={form.password_confirmation}
                         onChange={handleChange}
                         placeholder={t('profile.confirmPasswordPlaceholder')}
+                        showLabel={t('auth.showPassword')}
+                        hideLabel={t('auth.hidePassword')}
                       />
                     </div>
                   </div>

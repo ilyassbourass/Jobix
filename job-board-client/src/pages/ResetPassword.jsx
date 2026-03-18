@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
 import { useI18n } from '../context/I18nContext'
 
 export default function ResetPassword() {
@@ -129,34 +130,30 @@ export default function ResetPassword() {
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">
                 {t('auth.newPassword')}
               </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <PasswordInput
+                leftIcon={Lock}
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                showLabel={t('auth.showPassword')}
+                hideLabel={t('auth.hidePassword')}
+              />
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-gray-300">
                 {t('auth.confirmPassword')}
               </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  value={passwordConfirmation}
-                  onChange={(event) => setPasswordConfirmation(event.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <PasswordInput
+                leftIcon={Lock}
+                required
+                autoComplete="new-password"
+                value={passwordConfirmation}
+                onChange={(event) => setPasswordConfirmation(event.target.value)}
+                showLabel={t('auth.showPassword')}
+                hideLabel={t('auth.hidePassword')}
+              />
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">

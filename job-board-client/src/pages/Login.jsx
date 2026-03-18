@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
 import { useI18n } from '../context/I18nContext'
 
 export default function Login() {
@@ -116,14 +117,14 @@ export default function Login() {
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="password"
+                <PasswordInput
+                  leftIcon={Lock}
                   required
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  showLabel={t('auth.showPassword')}
+                  hideLabel={t('auth.hidePassword')}
                 />
               </div>
             </div>

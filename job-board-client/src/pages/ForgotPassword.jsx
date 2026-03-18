@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Briefcase, Mail } from 'lucide-react'
@@ -12,22 +12,75 @@ import { useI18n } from '../context/I18nContext'
 export default function ForgotPassword() {
   const { user } = useAuth()
   const { t } = useI18n()
+  const cooldownEmailKey = 'forgotPasswordEmail'
+  const cooldownUntilKey = 'forgotPasswordUntil'
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+
+  const normalizedEmail = email.trim().toLowerCase()
+  const formattedCooldown = useMemo(() => {
+    if (cooldown <= 0) return null
+    const minutes = Math.floor(cooldown / 60)
+    const seconds = cooldown % 60
+    return `${minutes}:${String(seconds).padStart(2, '0')}`
+  }, [cooldown])
 
   if (user) return <Navigate to="/" replace />
 
+  useEffect(() => {
+    if (cooldown <= 0) return undefined
+    const timer = window.setInterval(() => {
+      setCooldown((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [cooldown])
+
+  useEffect(() => {
+    if (!normalizedEmail) {
+      setCooldown(0)
+      return
+    }
+
+    const storedEmail = localStorage.getItem(cooldownEmailKey)
+    const storedUntil = Number(localStorage.getItem(cooldownUntilKey) || 0)
+
+    if (storedEmail === normalizedEmail && storedUntil > Date.now()) {
+      setCooldown(Math.ceil((storedUntil - Date.now()) / 1000))
+      return
+    }
+
+    setCooldown(0)
+  }, [normalizedEmail])
+
+  useEffect(() => {
+    if (cooldown !== 0) return
+
+    const storedEmail = localStorage.getItem(cooldownEmailKey)
+    const storedUntil = Number(localStorage.getItem(cooldownUntilKey) || 0)
+    if (storedEmail === normalizedEmail && storedUntil <= Date.now()) {
+      localStorage.removeItem(cooldownEmailKey)
+      localStorage.removeItem(cooldownUntilKey)
+    }
+  }, [cooldown, normalizedEmail])
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (loading || cooldown > 0) return
+
     setError('')
     setSuccess('')
     setLoading(true)
 
     try {
-      const { data } = await api.post('/auth/forgot-password', { email })
+      const { data } = await api.post('/auth/forgot-password', { email: normalizedEmail })
       setSuccess(data?.message || t('auth.forgotPasswordSuccess'))
+      const until = Date.now() + 60 * 1000
+      localStorage.setItem(cooldownEmailKey, normalizedEmail)
+      localStorage.setItem(cooldownUntilKey, String(until))
+      setCooldown(60)
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -90,8 +143,12 @@ export default function ForgotPassword() {
               </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? t('auth.sendingResetLink') : t('auth.sendResetLink')}
+            <Button type="submit" disabled={loading || cooldown > 0} className="w-full">
+              {loading
+                ? t('auth.sendingResetLink')
+                : cooldown > 0
+                  ? `${t('auth.sendResetLink')} (${formattedCooldown})`
+                  : t('auth.sendResetLink')}
             </Button>
           </form>
 
