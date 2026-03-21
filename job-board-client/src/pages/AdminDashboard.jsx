@@ -39,11 +39,13 @@ export default function AdminDashboard() {
   const [userPage, setUserPage] = useState(1)
   const [userLoading, setUserLoading] = useState(false)
   const [userError, setUserError] = useState('')
+  const [deletingUserId, setDeletingUserId] = useState(null)
   const [jobSearch, setJobSearch] = useState('')
   const [jobStatus, setJobStatus] = useState('all')
   const [jobPage, setJobPage] = useState(1)
   const [jobLoading, setJobLoading] = useState(false)
   const [jobError, setJobError] = useState('')
+  const [togglingJobId, setTogglingJobId] = useState(null)
 
   const fetchStats = async (selectedRange = range) => {
     setStatsLoading(true)
@@ -126,25 +128,33 @@ export default function AdminDashboard() {
   }, [tab, jobSearch, jobStatus, jobPage])
 
   const handleToggleJobStatus = async (id) => {
+    setTogglingJobId(id)
     try {
       await api.put(`/admin/jobs/${id}/toggle-status`)
       setJobs((prev) => ({
         ...prev,
         data: prev.data.map((job) => (job.id === id ? { ...job, is_active: !job.is_active } : job)),
       }))
+      toast.success(t('admin.jobStatusUpdated'))
     } catch (err) {
       toast.error(err.response?.data?.message || t('admin.actionFailed'))
+    } finally {
+      setTogglingJobId(null)
     }
   }
 
   const handleDeleteUser = async (id) => {
     if (!confirm(t('admin.deleteUserConfirm'))) return
 
+    setDeletingUserId(id)
     try {
       await api.delete(`/admin/users/${id}`)
       setUsers((prev) => ({ ...prev, data: prev.data.filter((user) => user.id !== id) }))
+      toast.success(t('admin.userDeleted'))
     } catch (err) {
       toast.error(err.response?.data?.message || t('admin.actionFailed'))
+    } finally {
+      setDeletingUserId(null)
     }
   }
 
@@ -450,6 +460,7 @@ export default function AdminDashboard() {
                   userRows.map((user) => {
                     const profileLink = profileLinkForUser(user)
                     const companyProfile = companyLink(user.company)
+                    const isDeleting = deletingUserId === user.id
                     return (
                       <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-900 dark:text-gray-100">
@@ -523,9 +534,10 @@ export default function AdminDashboard() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                                disabled={isDeleting}
                                 onClick={() => handleDeleteUser(user.id)}
                               >
-                                {t('admin.delete')}
+                                {isDeleting ? t('admin.deleting') : t('admin.delete')}
                               </Button>
                             )}
                           </div>
@@ -643,6 +655,7 @@ export default function AdminDashboard() {
                   jobRows.map((job) => {
                     const companyProfile = companyLink(job.company)
                     const jobDetail = jobLink(job)
+                    const isToggling = togglingJobId === job.id
                     return (
                       <tr key={job.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
                         <td className="px-6 py-4">
@@ -687,12 +700,17 @@ export default function AdminDashboard() {
                         <td className="whitespace-nowrap px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {jobDetail && (
-                              <Button variant="outline" size="sm" asChild>
-                                <Link to={jobDetail}>{t('admin.viewJob')}</Link>
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" onClick={() => handleToggleJobStatus(job.id)}>
-                              {t('admin.toggle')}
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={jobDetail}>{t('admin.viewJob')}</Link>
+                            </Button>
+                          )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleJobStatus(job.id)}
+                              disabled={isToggling}
+                            >
+                              {isToggling ? t('admin.toggling') : t('admin.toggle')}
                             </Button>
                           </div>
                         </td>

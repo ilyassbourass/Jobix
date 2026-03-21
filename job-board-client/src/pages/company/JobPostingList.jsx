@@ -27,6 +27,7 @@ export default function JobPostingList({ jobs, isLoading, onEdit, onShowApplican
       toast.error(err.response?.data?.message || t('jobList.deleteFailed'))
     },
   })
+  const deletingJobId = deleteMutation.isPending ? deleteMutation.variables : null
 
   const handleDelete = (id) => {
     if (!confirm(t('jobList.deleteConfirm'))) return
@@ -67,6 +68,7 @@ export default function JobPostingList({ jobs, isLoading, onEdit, onShowApplican
         const publishedLabel = job.published_at
           ? new Date(job.published_at).toLocaleDateString()
           : null
+        const isDeleting = deletingJobId === job.id
 
         return (
           <motion.div
@@ -117,7 +119,8 @@ export default function JobPostingList({ jobs, isLoading, onEdit, onShowApplican
                           <button
                             type="button"
                             onClick={() => onShowApplicants(job.id)}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline"
+                            disabled={isDeleting}
+                            className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Users className="h-4 w-4" />
                             {t('jobList.applicants')}
@@ -131,7 +134,7 @@ export default function JobPostingList({ jobs, isLoading, onEdit, onShowApplican
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onEdit(job)}>
+                    <Button variant="outline" size="sm" onClick={() => onEdit(job)} disabled={isDeleting}>
                       <Edit className="mr-1 h-4 w-4" />
                       {t('jobList.edit')}
                     </Button>
@@ -142,7 +145,7 @@ export default function JobPostingList({ jobs, isLoading, onEdit, onShowApplican
                       disabled={deleteMutation.isPending}
                     >
                       <Trash2 className="mr-1 h-4 w-4" />
-                      {t('jobList.delete')}
+                      {isDeleting ? t('jobList.deleting') : t('jobList.delete')}
                     </Button>
                   </div>
                 </div>

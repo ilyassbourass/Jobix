@@ -259,6 +259,7 @@ export default function Home() {
               index={index}
               saved={savedIds.has(job.id)}
               onToggleSaved={(next) => toggleSaved(job.id, next)}
+              bookmarkPending={saveMutation.isPending && saveMutation.variables?.jobId === job.id}
               showBookmark={user?.role === 'job_seeker'}
               user={user}
               applied={appliedIds.has(job.id)}

@@ -16,6 +16,7 @@ export default function JobCard({
   showBookmark = false,
   saved = false,
   onToggleSaved,
+  bookmarkPending = false,
   user = null,
   applied = false,
 }) {
@@ -97,6 +98,8 @@ export default function JobCard({
                   <button
                     type="button"
                     onClick={() => onToggleSaved?.(!saved)}
+                    disabled={bookmarkPending}
+                    aria-busy={bookmarkPending}
                     className={cn(
                       'inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
                       saved

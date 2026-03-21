@@ -32,7 +32,12 @@ export default function CompanyDashboard() {
   const [applicantsJobId, setApplicantsJobId] = useState(null)
   const formRef = useRef(null)
 
-  const { data: jobsResponse, isLoading } = useQuery({
+  const {
+    data: jobsResponse,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['companyJobs'],
     queryFn: async () => {
       const { data } = await api.get('/my/jobs')
@@ -100,6 +105,15 @@ export default function CompanyDashboard() {
             editingId={editingId}
             onClose={resetForm}
           />
+        </div>
+      )}
+
+      {isError && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+          <span>{t('companyDashboard.loadFailed')}</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => refetch()}>
+            {t('common.retry')}
+          </Button>
         </div>
       )}
 

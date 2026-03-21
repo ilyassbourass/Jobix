@@ -27,22 +27,48 @@ export default function ResetPassword() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
-
   useEffect(() => {
     if (emailLocked) {
       setEmail(linkEmail)
     }
   }, [emailLocked, linkEmail])
 
+  if (user) return <Navigate to="/" replace />
+
+  if (!token) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto max-w-md"
+      >
+        <Card className="border-slate-200/80 shadow-soft dark:border-gray-800">
+          <CardContent className="p-8 text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 shadow-sm">
+                <Briefcase className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              {t('auth.resetPasswordTitle')}
+            </h1>
+            <p className="mt-3 text-sm text-slate-600 dark:text-gray-400">
+              {t('auth.resetPasswordInvalid')}
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button asChild>
+                <Link to="/login">{t('auth.backToLogin')}</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-
-    if (!token) {
-      setError(t('auth.resetPasswordInvalid'))
-      return
-    }
 
     const resetEmail = (emailLocked ? linkEmail : email).trim().toLowerCase()
     setLoading(true)

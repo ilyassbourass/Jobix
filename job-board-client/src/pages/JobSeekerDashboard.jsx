@@ -24,7 +24,11 @@ export default function JobSeekerDashboard() {
   const savedJobsQueryKey = ['savedJobs', user?.id ?? 'guest']
   const applicationsQueryKey = ['myApplications', user?.id ?? 'guest']
 
-  const { data: savedJobsData } = useQuery({
+  const {
+    data: savedJobsData,
+    isError: savedJobsError,
+    refetch: refetchSavedJobs,
+  } = useQuery({
     queryKey: savedJobsQueryKey,
     queryFn: async () => {
       const { data } = await api.get('/saved-jobs?per_page=100')
@@ -33,7 +37,11 @@ export default function JobSeekerDashboard() {
     enabled: user?.role === 'job_seeker',
   })
 
-  const { data: applicationsData } = useQuery({
+  const {
+    data: applicationsData,
+    isError: applicationsError,
+    refetch: refetchApplications,
+  } = useQuery({
     queryKey: applicationsQueryKey,
     queryFn: async () => {
       const { data } = await api.get('/my/applications?per_page=20')
@@ -43,6 +51,7 @@ export default function JobSeekerDashboard() {
   })
 
   if (!user) return null
+  const hasLoadError = savedJobsError || applicationsError
 
   const savedJobs = savedJobsData?.data || []
   const applications = applicationsData?.data || []
@@ -109,6 +118,23 @@ export default function JobSeekerDashboard() {
           </Button>
         }
       />
+
+      {hasLoadError && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+          <span>{t('dashboard.loadFailed')}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              refetchSavedJobs()
+              refetchApplications()
+            }}
+          >
+            {t('common.retry')}
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard

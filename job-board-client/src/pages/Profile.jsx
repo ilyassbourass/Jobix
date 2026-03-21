@@ -335,6 +335,7 @@ export default function Profile() {
 
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                <fieldset disabled={updateMutation.isPending} className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className={labelClass}>{t('profile.name')}</label>
@@ -670,6 +671,7 @@ export default function Profile() {
                     {updateMutation.isPending ? t('profile.saving') : t('profile.saveChanges')}
                   </Button>
                 </div>
+                </fieldset>
               </form>
             </CardContent>
           </Card>

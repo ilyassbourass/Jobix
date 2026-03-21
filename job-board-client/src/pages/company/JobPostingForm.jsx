@@ -14,11 +14,23 @@ export default function JobPostingForm({ initialForm, editingId, onClose }) {
   const queryClient = useQueryClient()
   const { t, tOption } = useI18n()
   const [categories, setCategories] = useState([])
+  const [categoriesError, setCategoriesError] = useState('')
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState('')
 
+  const loadCategories = () => {
+    setCategoriesError('')
+    api
+      .get('/categories')
+      .then(({ data }) => setCategories(data))
+      .catch(() => {
+        setCategories([])
+        setCategoriesError(t('jobForm.categoriesLoadFailed'))
+      })
+  }
+
   useEffect(() => {
-    api.get('/categories').then(({ data }) => setCategories(data)).catch(() => {})
+    loadCategories()
   }, [])
 
   useEffect(() => {
@@ -50,12 +62,12 @@ export default function JobPostingForm({ initialForm, editingId, onClose }) {
       const firstValidationMessage = validationErrors
         ? Object.values(validationErrors).flat().find(Boolean)
         : null
-      setError(
+      const message =
         firstValidationMessage ||
-          err.response?.data?.message ||
-          t('jobForm.saveFailed')
-      )
-      toast.error(t('jobForm.saveFailed'))
+        err.response?.data?.message ||
+        t('jobForm.saveFailed')
+      setError(message)
+      toast.error(message)
     }
   })
 
@@ -86,6 +98,15 @@ export default function JobPostingForm({ initialForm, editingId, onClose }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <fieldset disabled={mutation.isPending} className="space-y-4">
+          {categoriesError && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <span>{categoriesError}</span>
+              <Button type="button" size="sm" variant="outline" onClick={loadCategories}>
+                {t('common.retry')}
+              </Button>
+            </div>
+          )}
           {error && (
             <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700 dark:border dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
               {error}
@@ -231,6 +252,7 @@ export default function JobPostingForm({ initialForm, editingId, onClose }) {
               {t('jobForm.cancel')}
             </Button>
           </div>
+          </fieldset>
         </form>
       </CardContent>
     </Card>

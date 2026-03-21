@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Briefcase, CheckCheck, UserRoundSearch, X } from 'lucide-react'
 import api from '../api/axios'
+import toast from 'react-hot-toast'
 import { Button } from './ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './ui/DropdownMenu'
 import { cn } from '../lib/utils'
@@ -101,7 +102,7 @@ export default function NotificationMenu({ user }) {
   const queryClient = useQueryClient()
   const queryKey = useMemo(() => ['notifications', user?.id ?? 'guest'], [user?.id])
 
-  const { data, refetch, isFetching } = useQuery({
+  const { data, refetch, isFetching, isError } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.get('/notifications?per_page=8')
@@ -119,6 +120,9 @@ export default function NotificationMenu({ user }) {
     onSuccess: (notification) => {
       queryClient.setQueryData(queryKey, (oldData) => markNotificationAsRead(oldData, notification.id))
     },
+    onError: () => {
+      toast.error(t('notifications.actionFailed'))
+    },
   })
 
   const markAllMutation = useMutation({
@@ -128,6 +132,9 @@ export default function NotificationMenu({ user }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(queryKey, (oldData) => markAllNotificationsAsRead(oldData))
+    },
+    onError: () => {
+      toast.error(t('notifications.actionFailed'))
     },
   })
 
@@ -139,6 +146,9 @@ export default function NotificationMenu({ user }) {
     onSuccess: () => {
       queryClient.setQueryData(queryKey, (oldData) => clearNotifications(oldData))
     },
+    onError: () => {
+      toast.error(t('notifications.actionFailed'))
+    },
   })
 
   const deleteMutation = useMutation({
@@ -149,12 +159,16 @@ export default function NotificationMenu({ user }) {
     onSuccess: (_, notificationId) => {
       queryClient.setQueryData(queryKey, (oldData) => removeNotification(oldData, notificationId))
     },
+    onError: () => {
+      toast.error(t('notifications.actionFailed'))
+    },
   })
 
   if (!user) return null
 
   const notifications = data?.data || []
   const unreadCount = data?.unread_count || 0
+  const deletingNotificationId = deleteMutation.isPending ? deleteMutation.variables : null
 
   const handleNotificationClick = async (notification) => {
     if (!notification.read_at) {
@@ -226,7 +240,19 @@ export default function NotificationMenu({ user }) {
         </div>
 
         <div className="max-h-[420px] overflow-y-auto">
-          {notifications.length === 0 ? (
+          {isError ? (
+            <div className="px-4 py-10 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-gray-800">
+                <Bell className="h-5 w-5 text-slate-500 dark:text-gray-400" />
+              </div>
+              <p className="mt-3 text-sm font-medium text-slate-800 dark:text-gray-200">
+                {t('notifications.loadFailed')}
+              </p>
+              <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => refetch()}>
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="px-4 py-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-gray-800">
                 <Bell className="h-5 w-5 text-slate-500 dark:text-gray-400" />
@@ -280,7 +306,8 @@ export default function NotificationMenu({ user }) {
                   <button
                     type="button"
                     onClick={() => deleteMutation.mutate(notification.id)}
-                    className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                    disabled={deletingNotificationId === notification.id}
+                    className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                     aria-label={t('notifications.dismissAria')}
                   >
                     <X className="h-3.5 w-3.5" />

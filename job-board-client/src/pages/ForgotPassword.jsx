@@ -28,8 +28,6 @@ export default function ForgotPassword() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`
   }, [cooldown])
 
-  if (user) return <Navigate to="/" replace />
-
   useEffect(() => {
     if (cooldown <= 0) return undefined
     const timer = window.setInterval(() => {
@@ -65,6 +63,8 @@ export default function ForgotPassword() {
       localStorage.removeItem(cooldownUntilKey)
     }
   }, [cooldown, normalizedEmail])
+
+  if (user) return <Navigate to="/" replace />
 
   const handleSubmit = async (event) => {
     event.preventDefault()

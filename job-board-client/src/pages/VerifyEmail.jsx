@@ -108,6 +108,40 @@ export default function VerifyEmail() {
     localStorage.removeItem(resendEmailKey)
   }, [resendCooldown, resendEmailKey, resendUntilKey])
 
+  if (!email) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto max-w-md"
+      >
+        <Card className="border-slate-200/80 shadow-soft dark:border-gray-800">
+          <CardContent className="p-8 text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 shadow-sm">
+                <KeyRound className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              {t('auth.verifyTitle')}
+            </h1>
+            <p className="mt-3 text-sm text-slate-600 dark:text-gray-400">
+              {t('auth.verifyMissingStateBody')}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button asChild>
+                <Link to="/register">{t('auth.startOverSignup')}</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/login">{t('auth.backToLogin')}</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
+
   const handleVerify = async (e) => {
     e.preventDefault()
     setError('')

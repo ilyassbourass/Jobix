@@ -27,7 +27,7 @@ export default function JobDetail() {
   const savedResumeName = user?.resume_filename || null
   const hasSavedResume = Boolean(user?.has_resume && savedResumeName)
 
-  const { data: job, isLoading: loading } = useQuery({
+  const { data: job, isLoading: loading, isError: jobError, refetch: refetchJob } = useQuery({
     queryKey: ['job', id],
     queryFn: async () => {
       const { data } = await api.get(`/jobs/${id}`)
@@ -137,10 +137,29 @@ export default function JobDetail() {
     saveMutation.mutate({ jobId: job.id, nextSaved: !saved })
   }
 
+  const isSavingCurrentJob = saveMutation.isPending && saveMutation.variables?.jobId === job?.id
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (jobError) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-card dark:border-gray-700 dark:bg-gray-800">
+        <p className="font-medium text-slate-700 dark:text-gray-100">{t('job.loadFailed')}</p>
+        <p className="mt-1 text-slate-500 dark:text-gray-400">{t('job.loadFailedHint')}</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <Button type="button" onClick={() => refetchJob()}>
+            {t('common.retry')}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">{t('publicProfile.browseJobs')}</Link>
+          </Button>
+        </div>
       </div>
     )
   }
@@ -224,7 +243,7 @@ export default function JobDetail() {
                     size="sm"
                     variant={saved ? 'secondary' : 'outline'}
                     onClick={handleToggleSaved}
-                    disabled={saveMutation.isPending}
+                    disabled={isSavingCurrentJob}
                     className="gap-2"
                   >
                     <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
@@ -323,6 +342,7 @@ export default function JobDetail() {
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    disabled={applyMutation.isPending}
                     onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
                     className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-900 hover:file:bg-slate-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:file:bg-gray-700 dark:file:text-gray-200"
                   />
@@ -344,6 +364,7 @@ export default function JobDetail() {
                   <Textarea
                     placeholder={t('job.coverLetterPlaceholder')}
                     value={coverLetter}
+                    disabled={applyMutation.isPending}
                     onChange={(e) => setCoverLetter(e.target.value)}
                     rows={4}
                   />
@@ -379,6 +400,11 @@ export default function JobDetail() {
                 key={relatedJob.id}
                 job={relatedJob}
                 index={index}
+                saved={savedJobIds.has(relatedJob.id)}
+                onToggleSaved={(next) =>
+                  saveMutation.mutate({ jobId: relatedJob.id, nextSaved: next })
+                }
+                bookmarkPending={saveMutation.isPending && saveMutation.variables?.jobId === relatedJob.id}
                 showBookmark={user?.role === 'job_seeker'}
                 user={user}
                 applied={appliedJobIds.has(relatedJob.id)}

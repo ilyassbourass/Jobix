@@ -1,0 +1,16 @@
+# OS noise
+Thumbs.db
+.DS_Store
+
+# Root-local junk
+logs/
+install-android-mtk-drivers.ps1
+watch-mtk-preloader.ps1
+
+# Frontend local/build files
+job-board-client/node_modules/
+job-board-client/dist/
+job-board-client/.env.production
+
+# Backend local cache
+job-board-api/.phpunit.result.cache

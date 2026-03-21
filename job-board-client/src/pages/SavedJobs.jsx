@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import toast from 'react-hot-toast'
 import api from '../api/axios'
 import JobCard from '../components/JobCard'
 import JobCardSkeleton from '../components/JobCardSkeleton'
@@ -14,17 +15,22 @@ export default function SavedJobs() {
   const { t } = useI18n()
   const [jobs, setJobs] = useState({ data: [], current_page: 1, last_page: 1 })
   const [loading, setLoading] = useState(true)
-  const [toast, setToast] = useState(null)
+  const [loadError, setLoadError] = useState('')
+  const [undoToast, setUndoToast] = useState(null)
   const [undoJob, setUndoJob] = useState(null)
   const [appliedIds, setAppliedIds] = useState(new Set())
   const undoTimeoutRef = useRef(null)
 
   const fetchSaved = (page = 1) => {
     setLoading(true)
+    setLoadError('')
     api
       .get(`/saved-jobs?page=${page}`)
       .then(({ data }) => setJobs(data))
-      .catch(() => setJobs({ data: [], current_page: 1, last_page: 1 }))
+      .catch(() => {
+        setJobs({ data: [], current_page: 1, last_page: 1 })
+        setLoadError(t('savedJobs.loadFailed'))
+      })
       .finally(() => setLoading(false))
   }
 
@@ -52,7 +58,7 @@ export default function SavedJobs() {
 
   const doRemovePermanently = () => {
     setUndoJob(null)
-    setToast(null)
+    setUndoToast(null)
   }
 
   const toggleSaved = async (jobId, nextSaved) => {
@@ -70,13 +76,22 @@ export default function SavedJobs() {
 
     setJobs((prev) => ({ ...prev, data: prev.data.filter((item) => item.id !== jobId) }))
     setUndoJob(job)
-    setToast(t('savedJobs.removed'))
+    setUndoToast(t('savedJobs.removed'))
 
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
     undoTimeoutRef.current = setTimeout(() => {
-      api.delete(`/jobs/${jobId}/save`).catch(() => {})
-      doRemovePermanently()
-      undoTimeoutRef.current = null
+      api
+        .delete(`/jobs/${jobId}/save`)
+        .then(() => doRemovePermanently())
+        .catch(() => {
+          fetchSaved(jobs.current_page)
+          setUndoToast(null)
+          setUndoJob(null)
+          toast.error(t('savedJobs.removeFailed'))
+        })
+        .finally(() => {
+          undoTimeoutRef.current = null
+        })
     }, 5000)
   }
 
@@ -92,9 +107,12 @@ export default function SavedJobs() {
       ...prev,
       data: [...prev.data, undoJob].sort((a, b) => b.id - a.id),
     }))
-    api.post(`/jobs/${undoJob.id}/save`).catch(() => {})
+    api.post(`/jobs/${undoJob.id}/save`).catch(() => {
+      fetchSaved(jobs.current_page)
+      toast.error(t('savedJobs.undoFailed'))
+    })
     setUndoJob(null)
-    setToast(null)
+    setUndoToast(null)
   }
 
   return (
@@ -105,9 +123,18 @@ export default function SavedJobs() {
         actions={<Badge variant="secondary">{t('savedJobs.savedCount', { count: jobs.data.length })}</Badge>}
       />
 
-      {toast && (
+      {loadError && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+          <span>{loadError}</span>
+          <Button size="sm" variant="outline" onClick={() => fetchSaved(jobs.current_page || 1)}>
+            {t('common.retry')}
+          </Button>
+        </div>
+      )}
+
+      {undoToast && (
         <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-md dark:border-gray-700 dark:bg-gray-800">
-          <span className="text-sm text-slate-700 dark:text-gray-200">{toast}</span>
+          <span className="text-sm text-slate-700 dark:text-gray-200">{undoToast}</span>
           <Button size="sm" variant="outline" onClick={handleUndo}>
             {t('savedJobs.undo')}
           </Button>

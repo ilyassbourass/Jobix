@@ -33,6 +33,7 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
   const [statusFilter, setStatusFilter] = useState('all')
   const [drafts, setDrafts] = useState({})
   const [savingId, setSavingId] = useState(null)
+  const [downloadingResumeId, setDownloadingResumeId] = useState(null)
 
   useEffect(() => {
     if (!jobId || !open) return
@@ -126,6 +127,8 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
   }
 
   const downloadResume = async (app) => {
+    setDownloadingResumeId(app.id)
+
     try {
       const response = await api.get(`/applications/${app.id}/resume`, {
         responseType: 'blob',
@@ -143,6 +146,8 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
       toast.success(t('applicants.resumeDownloaded'))
     } catch (err) {
       toast.error(err.response?.data?.message || t('applicants.resumeDownloadFailed'))
+    } finally {
+      setDownloadingResumeId(null)
     }
   }
 
@@ -232,6 +237,7 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
                 {filteredApplications.map((app) => {
                   const draft = getDraft(app)
                   const isSaving = savingId === app.id
+                  const isDownloadingResume = downloadingResumeId === app.id
                   const hasNotesChanges = normalizeText(draft.company_notes) !== normalizeText(app.company_notes)
 
                   return (
@@ -300,6 +306,7 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
                                 className="mt-2 min-h-[110px] bg-white dark:bg-gray-800"
                                 placeholder={t('applicants.recruiterNotesPlaceholder')}
                                 value={draft.company_notes}
+                                disabled={isSaving}
                                 onChange={(e) => updateDraft(app.id, 'company_notes', e.target.value)}
                               />
                             </div>
@@ -312,6 +319,7 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
                             <Input
                               placeholder={t('applicants.rejectionPlaceholder')}
                               value={draft.rejection_reason}
+                              disabled={isSaving}
                               onChange={(e) => updateDraft(app.id, 'rejection_reason', e.target.value)}
                             />
                           </div>
@@ -382,17 +390,19 @@ export default function ApplicantsModal({ jobId, open, onClose }) {
                               )
                             }
                           >
-                            {t('applicants.saveNotes')}
+                            {isSaving ? t('applicants.saving') : t('applicants.saveNotes')}
                           </Button>
 
                           {app.resume_path ? (
                             <Button
                               className="w-full"
                               variant="outline"
-                              disabled={isSaving}
+                              disabled={isSaving || isDownloadingResume}
                               onClick={() => downloadResume(app)}
                             >
-                              {t('applicants.downloadResume')}
+                              {isDownloadingResume
+                                ? t('applicants.downloadingResume')
+                                : t('applicants.downloadResume')}
                             </Button>
                           ) : (
                             <div className="rounded-xl border border-dashed border-slate-300 px-3 py-2 text-center text-sm text-slate-500 dark:border-gray-700 dark:text-gray-400">
