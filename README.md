@@ -73,6 +73,40 @@ Jobix/
 - Uploads stored in Cloudflare R2
 - Transactional email sent with Brevo
 
+## Screenshots
+
+### Homepage
+
+![Homepage](./screenshots/home.png)
+
+### Login
+
+![Login](./screenshots/login.png)
+
+### Register
+
+![Register](./screenshots/register.png)
+
+### Candidate Dashboard
+
+![Candidate Dashboard](./screenshots/candidate-dashboard.png)
+
+### Company Dashboard
+
+![Company Dashboard](./screenshots/company-dashboard.png)
+
+### Admin Dashboard
+
+![Admin Dashboard](./screenshots/admin-dashboard.png)
+
+### Job Details
+
+![Job Details](./screenshots/job-details.png)
+
+### Public Profile
+
+![Public Profile](./screenshots/public-profile.png)
+
 ## Run Locally
 
 ### 1. Backend
