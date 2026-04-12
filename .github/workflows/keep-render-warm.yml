@@ -1,0 +1,30 @@
+name: Keep Render Warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Wake public API
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in 1 2 3; do
+            if curl --fail --silent --show-error --location --max-time 120 "https://jobix.onrender.com/api/jobs?per_page=1" > /dev/null; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 3 ]; then
+              sleep 15
+            fi
+          done
+
+          echo "Jobix API warmup failed after 3 attempts." >&2
+          exit 1
