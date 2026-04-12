@@ -31,9 +31,19 @@ class JobController extends Controller
         return response()->json($jobs);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $job = Job::with(['company.users', 'category'])->active()->findOrFail($id);
+        $job = Job::with(['company.users', 'category'])->findOrFail($id);
+        $viewer = auth('api')->user();
+        $canViewInactive = $viewer && ($viewer->isAdmin() || $viewer->company_id === $job->company_id);
+
+        if (
+            !$canViewInactive
+            && (!$job->is_active || ($job->expires_at && !$job->expires_at->isFuture()))
+        ) {
+            abort(404);
+        }
+
         return response()->json($job);
     }
 
