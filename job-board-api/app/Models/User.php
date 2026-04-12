@@ -230,6 +230,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->belongsToMany(Job::class, 'saved_jobs')->withTimestamps();
     }
 
+    public function pushTokens()
+    {
+        return $this->hasMany(PushToken::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

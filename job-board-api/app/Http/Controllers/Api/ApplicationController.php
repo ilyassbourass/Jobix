@@ -192,7 +192,15 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'Resume not found.'], 404);
         }
 
-        return Uploads::disk()->download($application->resume_path);
+        $extension = pathinfo((string) $application->resume_path, PATHINFO_EXTENSION);
+        $baseName = $application->user?->username ?: Str::slug((string) ($application->user?->name ?: 'candidate'));
+        $baseName = trim((string) $baseName, '-');
+        $baseName = $baseName !== '' ? $baseName : 'candidate';
+        $downloadName = $extension
+            ? "{$baseName}-application-{$application->id}.{$extension}"
+            : "{$baseName}-application-{$application->id}";
+
+        return Uploads::disk()->download($application->resume_path, $downloadName);
     }
 
     public function recentCompanyApplications(Request $request): JsonResponse

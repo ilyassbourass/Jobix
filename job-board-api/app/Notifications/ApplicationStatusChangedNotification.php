@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\Application;
+use App\Notifications\Channels\ExpoPushChannel;
+use App\Support\AuthLink;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -17,7 +19,7 @@ class ApplicationStatusChangedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', ExpoPushChannel::class];
     }
 
     public function toArray(object $notifiable): array
@@ -37,6 +39,27 @@ class ApplicationStatusChangedNotification extends Notification
             'company_name' => $companyName,
             'status' => $status,
             'rejection_reason' => $this->application->rejection_reason,
+        ];
+    }
+
+    public function toExpoPush(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+
+        return [
+            'title' => $data['title'],
+            'body' => $data['message'],
+            'sound' => 'default',
+            'channelId' => 'default',
+            'data' => [
+                'type' => $data['type'],
+                'job_id' => $data['job_id'],
+                'application_id' => $data['application_id'],
+                'status' => $data['status'],
+                'action_url' => $data['action_url'],
+                'url' => AuthLink::mobile('jobs/' . $this->application->job_id)
+                    ?? AuthLink::frontend('/jobs/' . $this->application->job_id),
+            ],
         ];
     }
 
