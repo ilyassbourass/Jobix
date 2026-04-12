@@ -10,7 +10,7 @@
 
   <p style="margin:24px 0;">
     <a href="{{ $resetUrl }}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:10px; font-weight:700;">
-      Reset your password
+      {{ !empty($mobileResetUrl) ? 'Reset in Jobix app' : 'Reset your password' }}
     </a>
   </p>
 
@@ -18,13 +18,22 @@
     This link expires in {{ $expiration }} minutes.
   </p>
 
-  <p style="margin:0 0 16px; color:#475569;">
-    If the button does not work, copy and paste this link into your browser:
-  </p>
+  @if (!empty($mobileResetUrl) && !empty($webResetUrl))
+    <p style="margin:0 0 12px; color:#475569;">
+      Prefer web instead? Use this link:
+    </p>
+    <p style="margin:0 0 16px; word-break:break-all; color:#2563eb;">
+      {{ $webResetUrl }}
+    </p>
+  @else
+    <p style="margin:0 0 16px; color:#475569;">
+      If the button does not work, copy and paste this link into your browser:
+    </p>
 
-  <p style="margin:0 0 16px; word-break:break-all; color:#2563eb;">
-    {{ $resetUrl }}
-  </p>
+    <p style="margin:0 0 16px; word-break:break-all; color:#2563eb;">
+      {{ $resetUrl }}
+    </p>
+  @endif
 
   <p style="margin:0 0 16px; color:#475569;">
     If you did not request a password reset, you can safely ignore this email.

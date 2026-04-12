@@ -16,25 +16,25 @@ export default function VerifyEmail() {
   const resendEmailKey = 'verifyResendEmail'
   const resendUntilKey = 'verifyResendUntil'
   const pendingEmailKey = 'pendingVerificationEmail'
-  const pendingUserIdKey = 'pendingVerificationUserId'
   const storedPendingEmail = localStorage.getItem(pendingEmailKey) || ''
   const storedResendEmail = localStorage.getItem(resendEmailKey) || ''
-  const storedPendingUserId = localStorage.getItem(pendingUserIdKey) || ''
+  const searchParams = new URLSearchParams(location.search)
+  const queryEmail = searchParams.get('email') || ''
+  const queryCode = (searchParams.get('code') || '').replace(/\D/g, '').slice(0, 6)
   const initialEmail =
-    location.state?.email || storedPendingEmail || storedResendEmail || ''
-  const initialUserId =
-    location.state?.userId ||
-    (storedPendingEmail && storedPendingEmail === initialEmail ? storedPendingUserId : '') ||
-    ''
+    location.state?.email || queryEmail || storedPendingEmail || storedResendEmail || ''
 
   const [email, setEmail] = useState(initialEmail)
-  const [userId, setUserId] = useState(initialUserId)
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(queryCode)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
-  const initialCooldownSeconds = Number(location.state?.initialCooldownSeconds || 0)
+  const resendSuccessMessage = t('auth.verifyResent')
+  const safeResendSuccessMessage =
+    resendSuccessMessage === 'auth.verifyResent'
+      ? 'Verification code sent again. Check your inbox.'
+      : resendSuccessMessage
 
   const formattedCooldown = useMemo(() => {
     if (resendCooldown <= 0) return null
@@ -63,34 +63,11 @@ export default function VerifyEmail() {
   }, [initialEmail, resendEmailKey, resendUntilKey])
 
   useEffect(() => {
-    if (!initialEmail || initialCooldownSeconds <= 0) return
-
-    const storedEmail = localStorage.getItem(resendEmailKey)
-    const storedUntil = Number(localStorage.getItem(resendUntilKey) || 0)
-
-    if (storedEmail === initialEmail && storedUntil > Date.now()) {
-      return
-    }
-
-    const until = Date.now() + initialCooldownSeconds * 1000
-    localStorage.setItem(resendEmailKey, initialEmail)
-    localStorage.setItem(resendUntilKey, String(until))
-    setResendCooldown(initialCooldownSeconds)
-  }, [initialCooldownSeconds, initialEmail, resendEmailKey, resendUntilKey])
-
-  useEffect(() => {
     if (!email && storedResendEmail) {
       setEmail(storedResendEmail)
       localStorage.setItem(pendingEmailKey, storedResendEmail)
     }
   }, [email, storedResendEmail, pendingEmailKey])
-
-  useEffect(() => {
-    if (!userId && storedPendingUserId) {
-      setUserId(storedPendingUserId)
-      localStorage.setItem(pendingUserIdKey, storedPendingUserId)
-    }
-  }, [userId, storedPendingUserId, pendingUserIdKey])
 
   useEffect(() => {
     if (!email) return
@@ -108,40 +85,6 @@ export default function VerifyEmail() {
     localStorage.removeItem(resendEmailKey)
   }, [resendCooldown, resendEmailKey, resendUntilKey])
 
-  if (!email) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-md"
-      >
-        <Card className="border-slate-200/80 shadow-soft dark:border-gray-800">
-          <CardContent className="p-8 text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 shadow-sm">
-                <KeyRound className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {t('auth.verifyTitle')}
-            </h1>
-            <p className="mt-3 text-sm text-slate-600 dark:text-gray-400">
-              {t('auth.verifyMissingStateBody')}
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button asChild>
-                <Link to="/register">{t('auth.startOverSignup')}</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/login">{t('auth.backToLogin')}</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    )
-  }
-
   const handleVerify = async (e) => {
     e.preventDefault()
     setError('')
@@ -152,15 +95,8 @@ export default function VerifyEmail() {
     setLoading(true)
 
     try {
-      await api.post('/auth/verify-email', {
-        email,
-        code,
-        user_id: userId || undefined,
-      })
+      await api.post('/auth/verify-email', { email, code })
       localStorage.removeItem('pendingVerificationEmail')
-      localStorage.removeItem(resendEmailKey)
-      localStorage.removeItem(resendUntilKey)
-      localStorage.removeItem(pendingUserIdKey)
       toast.success(t('auth.verifySuccess'), { duration: 5000 })
       navigate('/login', { replace: true })
     } catch (err) {
@@ -176,33 +112,16 @@ export default function VerifyEmail() {
     setResending(true)
 
     try {
-      const { data } = await api.post('/auth/email/verification-notification', {
-        email,
-        user_id: userId || undefined,
-      })
-      const resolvedEmail = data?.email || email
-      const resolvedUserId = data?.user_id || userId
-
-      if (resolvedEmail !== email) {
-        setEmail(resolvedEmail)
-      }
-      if (resolvedUserId && String(resolvedUserId) !== String(userId || '')) {
-        setUserId(String(resolvedUserId))
-      }
-
-      toast.success(data?.message || t('auth.verifyResent'), { duration: 5000 })
-      setCode('')
+      const { data } = await api.post('/auth/email/verification-notification', { email })
+      toast.success(safeResendSuccessMessage, { duration: 5000 })
       const retryAfterSeconds = Number(data?.retry_after_seconds || 60)
       const safeRetryAfterSeconds = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
         ? retryAfterSeconds
         : 60
       const until = Date.now() + safeRetryAfterSeconds * 1000
-      localStorage.setItem(resendEmailKey, resolvedEmail)
+      localStorage.setItem(resendEmailKey, email)
       localStorage.setItem(resendUntilKey, String(until))
-      localStorage.setItem(pendingEmailKey, resolvedEmail)
-      if (resolvedUserId) {
-        localStorage.setItem(pendingUserIdKey, String(resolvedUserId))
-      }
+      localStorage.setItem(pendingEmailKey, email)
       setResendCooldown(safeRetryAfterSeconds)
     } catch (err) {
       const retryAfter = Number(err.response?.data?.retry_after_seconds || 0)
@@ -211,9 +130,6 @@ export default function VerifyEmail() {
         localStorage.setItem(resendEmailKey, email)
         localStorage.setItem(resendUntilKey, String(until))
         localStorage.setItem(pendingEmailKey, email)
-        if (userId) {
-          localStorage.setItem(pendingUserIdKey, String(userId))
-        }
         setResendCooldown(retryAfter)
       }
       setError(err.response?.data?.message || t('auth.verifyFailed'))
