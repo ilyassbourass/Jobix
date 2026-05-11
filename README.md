@@ -6,7 +6,7 @@ It helps job seekers discover roles, save jobs, apply with a resume, and manage 
 
 ## Live Site
 
-- Frontend: [https://jobix-two.vercel.app](https://jobix-two.vercel.app)
+- Frontend: [https://www.jobixapp.com/](https://www.jobixapp.com/)
 - API: [https://jobix.onrender.com](https://jobix.onrender.com)
 
 ## Source Code
